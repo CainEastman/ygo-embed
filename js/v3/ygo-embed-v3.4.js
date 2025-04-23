@@ -706,23 +706,23 @@
       await waitForDropInBlog();
       
       // Initialize cache and request queue
-      const cardCache = initCache();
-      const requestQueue = setupRequestQueue(cardCache);
+    const cardCache = initCache();
+    const requestQueue = setupRequestQueue(cardCache);
       
       // Setup context for all modules
-      const context = {
-        cardCache,
-        requestQueue,
-        fetchCard: (name) => fetchCard(name, cardCache, requestQueue),
-        fetchCards: (names) => fetchCards(names, cardCache, requestQueue)
-      };
+    const context = {
+      cardCache,
+      requestQueue,
+      fetchCard: (name) => fetchCard(name, cardCache, requestQueue),
+      fetchCards: (names) => fetchCards(names, cardCache, requestQueue)
+    };
       
       // Load styles
       loadStyles();
       
       // Setup periodic cache saving
       const saveInterval = CACHE.SAVE_INTERVAL;
-      const saveIntervalId = setInterval(() => saveCardCache(cardCache), saveInterval);
+    const saveIntervalId = setInterval(() => saveCardCache(cardCache), saveInterval);
       
       // Save cache before page unload
       window.addEventListener('beforeunload', () => saveCardCache(cardCache));
@@ -734,19 +734,19 @@
       }
       
       // Setup hover previews
-      setupHoverPreviews(context);
+    setupHoverPreviews(context);
       
       // Render card embeds
-      renderCardEmbeds(context);
+    renderCardEmbeds(context);
       
       // Render decklists
-      renderDecklists(context);
+    renderDecklists(context);
       
       // Save cache on page unload
       window.addEventListener('unload', () => {
-        clearInterval(saveIntervalId);
-        saveCardCache(cardCache);
-      });
+      clearInterval(saveIntervalId);
+      saveCardCache(cardCache);
+    });
       
       console.log('✅ YGO embed script v3.4 initialized successfully');
     } catch (error) {

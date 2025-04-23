@@ -1,8 +1,6 @@
-# YGO Embed - Yu-Gi-Oh! Card & Decklist Embed Script
+# YGO Embed v3 Module Documentation
 
-A modular JavaScript library for embedding Yu-Gi-Oh! cards and decklists in web pages, with hover effects, card details, and responsive layouts.
-
-![Yu-Gi-Oh! Card Example](https://ms.yugipedia.com//thumb/1/16/DarkMagician-SDMY-EN-C-1E.png/300px-DarkMagician-SDMY-EN-C-1E.png)
+A modular JavaScript library for embedding Yu-Gi-Oh! cards and decklists in web pages.
 
 ## Features
 
@@ -12,33 +10,23 @@ A modular JavaScript library for embedding Yu-Gi-Oh! cards and decklists in web 
 - **Mobile Support**: Responsive layouts that work on all devices
 - **Caching**: LocalStorage cache reduces API requests
 - **Modular Structure**: Well-organized code using ES modules
-
-## Usage
-
-### Individual Card Embedding
-
-```html
-<p>embed::Dark Magician</p>
-```
-
-### Deck List Embedding
-
-```html
-<p>deck::main::["Blue-Eyes White Dragon", "Dark Magician x2", "Pot of Greed"]</p>
-<p>deck::extra::["Blue-Eyes Twin Burst Dragon", "Hieratic Seal Of The Heavenly Spheres"]</p>
-```
-
-### Card References
-
-```html
-<div class="dib-post-content">
-  <p>Check out this [[Blue-Eyes White Dragon]] card, it's powerful!</p>
-</div>
-```
+- **Error Handling**: Graceful fallbacks for missing cards
+- **Customization**: Configurable display options
+- **Fast Loading**: Optimized for performance
+- **Browser Support**: Works in all modern browsers
 
 ## Installation
 
-### ES Module Version (Recommended)
+### CDN Usage (Recommended)
+```html
+<script type="module">
+  import { YGOEmbed } from 'https://cdn.jsdelivr.net/gh/DawnbrandBots/ygo-embed@latest/js/v3/ygo-embed-v3.js';
+  const embed = new YGOEmbed();
+  embed.init();
+</script>
+```
+
+### Local Installation
 ```html
 <script type="module" src="path/to/js/ygo-embed-v3.js"></script>
 ```
@@ -48,26 +36,118 @@ A modular JavaScript library for embedding Yu-Gi-Oh! cards and decklists in web 
 <script src="path/to/dist/ygo-embed-v3.min.js"></script>
 ```
 
+## Usage
+
+### Individual Card Embedding
+```html
+<p>embed::Dark Magician</p>
+```
+
+### Deck List Embedding
+```html
+<p>deck::main::["Blue-Eyes White Dragon", "Dark Magician x2", "Pot of Greed"]</p>
+<p>deck::extra::["Blue-Eyes Twin Burst Dragon", "Hieratic Seal Of The Heavenly Spheres"]</p>
+```
+
+### DropInBlog Integration
+For proper integration with DropInBlog's content management system:
+
+1. Ensure the script loads after DropInBlog content:
+```html
+<!-- DropInBlog content container -->
+<div class="dib-post-content">
+  <!-- Blog content with card references -->
+  <p>Check out this [[Dark Magician]] card!</p>
+</div>
+
+<!-- YGO Embed initialization -->
+<script type="module">
+  // Initialize after page load
+  window.addEventListener('load', () => {
+    import { YGOEmbed } from 'https://cdn.jsdelivr.net/gh/DawnbrandBots/ygo-embed@latest/js/v3/ygo-embed-v3.js';
+    const embed = new YGOEmbed();
+    embed.init();
+  });
+</script>
+```
+
+2. For dynamic content updates:
+```javascript
+// After DropInBlog content updates
+const embed = new YGOEmbed();
+embed.init();
+```
+
+This ensures that card references are properly processed after DropInBlog has finished rendering its content.
+
 ## Module Structure
 
 The library is organized into the following modules:
 
 - **Main Entry Point** (`ygo-embed-v3.js`): Coordinates all modules
-- **Cache Module** (`v3/modules/cache.js`): Handles localStorage operations
-- **API Module** (`v3/modules/api.js`): Manages YGOPRODeck API communication
-- **Card Fetcher** (`v3/modules/cardFetcher.js`): Provides functions to fetch card data
-- **Hover Preview** (`v3/modules/hoverPreview.js`): Implements card hover functionality
-- **Card Embed** (`v3/modules/cardEmbed.js`): Renders detailed card displays
-- **Decklist Renderer** (`v3/modules/decklistRenderer.js`): Renders collections of cards
-- **Content Parser** (`v3/modules/contentParser.js`): Converts special markup
-- **Styles** (`v3/modules/styles.js`): Manages CSS loading
-- **Constants** (`v3/modules/constants.js`): Shared constants
+- **Cache Module** (`modules/cache.js`): Handles localStorage operations
+- **API Module** (`modules/api.js`): Manages YGOPRODeck API communication
+- **Card Fetcher** (`modules/cardFetcher.js`): Provides functions to fetch card data
+- **Hover Preview** (`modules/hoverPreview.js`): Implements card hover functionality
+- **Card Embed** (`modules/cardEmbed.js`): Renders detailed card displays
+- **Decklist Renderer** (`modules/decklistRenderer.js`): Renders collections of cards
+- **Content Parser** (`modules/contentParser.js`): Converts special markup
+- **Styles** (`modules/styles.js`): Manages CSS loading
+- **Constants** (`modules/constants.js`): Shared constants
 
-## Development
+## Development Setup
 
-1. Clone the repository
-2. Navigate to the project directory
-3. Open index.html to view the demo
+1. Clone the repository:
+```bash
+git clone https://github.com/DawnbrandBots/ygo-embed.git
+cd ygo-embed
+```
+
+2. Install dependencies:
+```bash
+npm install
+```
+
+3. Start development server:
+```bash
+npm run dev
+```
+
+4. Build for production:
+```bash
+npm run build
+```
+
+## Browser Compatibility
+
+The library is compatible with all modern browsers that support ES modules:
+
+- Chrome 61+
+- Firefox 60+
+- Safari 10.1+
+- Edge 16+
+- Opera 48+
+
+For older browsers, use the standard version which includes necessary polyfills.
+
+## Version History
+
+### v3.0.0
+- Complete rewrite using ES modules
+- Added deck list support
+- Improved mobile responsiveness
+- Added localStorage caching
+- New hover preview system
+
+### v2.0.0
+- Added card pricing information
+- Improved error handling
+- Better browser compatibility
+
+### v1.0.0
+- Initial release
+- Basic card embedding
+- Simple hover effects
 
 ## Credits
 
