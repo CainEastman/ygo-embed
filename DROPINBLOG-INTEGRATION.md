@@ -120,6 +120,21 @@ If you encounter issues with the YGO Embed script:
 
 The YGO Embed script is loaded directly from GitHub via jsDelivr, so you'll automatically get updates when the repository is updated.
 
+## Project Structure
+
+The YGO Embed script is organized in a modular structure:
+
+- **Main Entry Point** (`js/ygo-embed-v3.js`): Initializes and coordinates all modules
+- **Cache Module** (`js/v3/modules/cache.js`): Handles localStorage operations and cache management
+- **API Module** (`js/v3/modules/api.js`): Manages communication with the YGOPRODeck API
+- **Card Fetcher** (`js/v3/modules/cardFetcher.js`): Provides functions to fetch card data
+- **Hover Preview** (`js/v3/modules/hoverPreview.js`): Implements card hover effects
+- **Card Embed** (`js/v3/modules/cardEmbed.js`): Renders individual card displays
+- **Decklist Renderer** (`js/v3/modules/decklistRenderer.js`): Renders collections of cards by deck section
+- **Content Parser** (`js/v3/modules/contentParser.js`): Converts special markup in content
+- **Styles** (`js/v3/modules/styles.js`): Handles CSS loading
+- **Constants** (`js/v3/modules/constants.js`): Shared constants used across modules
+
 ## Support
 
 If you need help with the YGO Embed script, please open an issue on the GitHub repository at:

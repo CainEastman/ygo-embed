@@ -3,14 +3,14 @@
 // Main entry point - loads all modules
 
 // Import modules
-import { initCache, saveCardCache, getCardCache } from './modules/cache.js';
-import { setupRequestQueue } from './modules/api.js';
-import { fetchCard, fetchCards } from './modules/cardFetcher.js';
-import { setupHoverPreviews } from './modules/hoverPreview.js';
-import { renderCardEmbeds } from './modules/cardEmbed.js';
-import { renderDecklists } from './modules/decklistRenderer.js';
-import { convertMarkup } from './modules/contentParser.js';
-import { loadStyles } from './modules/styles.js';
+import { initCache, saveCardCache, getCardCache } from './v3/modules/cache.js';
+import { setupRequestQueue } from './v3/modules/api.js';
+import { fetchCard, fetchCards } from './v3/modules/cardFetcher.js';
+import { setupHoverPreviews } from './v3/modules/hoverPreview.js';
+import { renderCardEmbeds } from './v3/modules/cardEmbed.js';
+import { renderDecklists } from './v3/modules/decklistRenderer.js';
+import { convertMarkup } from './v3/modules/contentParser.js';
+import { loadStyles } from './v3/modules/styles.js';
 
 // Main initialization function
 document.addEventListener('DOMContentLoaded', async function () {

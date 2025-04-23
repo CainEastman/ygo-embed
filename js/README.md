@@ -52,16 +52,16 @@ A modular JavaScript library for embedding Yu-Gi-Oh! cards and decklists in web 
 
 The library is organized into the following modules:
 
-- **Main Entry Point**: Coordinates all modules
-- **Cache Module**: Handles localStorage operations
-- **API Module**: Manages YGOPRODeck API communication
-- **Card Fetcher**: Provides functions to fetch card data
-- **Hover Preview**: Implements card hover functionality
-- **Card Embed**: Renders detailed card displays
-- **Decklist Renderer**: Renders collections of cards
-- **Content Parser**: Converts special markup
-- **Styles**: Manages CSS loading
-- **Constants**: Shared constants
+- **Main Entry Point** (`ygo-embed-v3.js`): Coordinates all modules
+- **Cache Module** (`v3/modules/cache.js`): Handles localStorage operations
+- **API Module** (`v3/modules/api.js`): Manages YGOPRODeck API communication
+- **Card Fetcher** (`v3/modules/cardFetcher.js`): Provides functions to fetch card data
+- **Hover Preview** (`v3/modules/hoverPreview.js`): Implements card hover functionality
+- **Card Embed** (`v3/modules/cardEmbed.js`): Renders detailed card displays
+- **Decklist Renderer** (`v3/modules/decklistRenderer.js`): Renders collections of cards
+- **Content Parser** (`v3/modules/contentParser.js`): Converts special markup
+- **Styles** (`v3/modules/styles.js`): Manages CSS loading
+- **Constants** (`v3/modules/constants.js`): Shared constants
 
 ## Development
 
