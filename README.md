@@ -148,6 +148,28 @@ The modular version is organized into the following modules:
 - **Mobile Detection**: Different interaction methods for desktop and mobile users
 - **Responsive Design**: Adapts to different screen sizes and devices
 
+## CDN Usage
+
+You can use jsDelivr CDN to serve the YGO Embed files without hosting them yourself:
+
+```html
+<!-- CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/CainEastman/ygo-embed@main/js/v3/ygo-embed-v3.css">
+
+<!-- JavaScript (Minified) -->
+<script src="https://cdn.jsdelivr.net/gh/CainEastman/ygo-embed@main/dist/ygo-embed-v3.min.js"></script>
+```
+
+### About jsDelivr CDN Cache
+
+This repository includes an automatic cache purging system that ensures the CDN always serves the latest version of your files:
+
+- A GitHub Action workflow runs whenever changes are pushed to the main branch
+- This action automatically purges the jsDelivr cache for affected files
+- Without this action, jsDelivr typically caches files from the `@main` branch for up to 12 hours
+
+If you need to manually purge the cache for a specific file, you can use the [jsDelivr Purge Tool](https://www.jsdelivr.com/tools/purge).
+
 ## Credits
 
 - Card data is retrieved from the [YGOPRODeck API](https://db.ygoprodeck.com/api-guide/)
