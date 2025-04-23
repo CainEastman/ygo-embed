@@ -434,10 +434,11 @@
   }
   async function renderDeckSection(container, section, cardList, availableCards) {
     try {
-      const sectionEl = document.createElement("div");
-      sectionEl.className = `ygo-deck-section ygo-deck-${section}`;
+      const sectionEl = document.createElement('div');
+      sectionEl.className = `ygo-deck-section ygo-deck-${section.toLowerCase()}`;
       sectionEl.innerHTML = `<h3>${section.toUpperCase()} DECK</h3>`;
-      const processedCards = cardList.map((entry) => {
+
+      const processedCards = cardList.map(entry => {
         try {
           const { name, quantity } = parseQuantity(entry);
           const card = findBestMatch(name, availableCards);
@@ -448,41 +449,42 @@
               quantity,
               error: true,
               html: `<div class="ygo-card-missing">
-                            <span class="ygo-card-name">${name}</span>
-                            <span class="ygo-card-quantity">x${quantity}</span>
-                            <span class="ygo-error-msg">Card not found</span>
-                        </div>`
+                      <span class="ygo-card-name">${name}</span>
+                      <span class="ygo-card-quantity">x${quantity}</span>
+                      <span class="ygo-error-msg">Card not found</span>
+                  </div>`
             };
           }
           return {
             ...card,
             quantity,
             html: `<div class="ygo-card-entry" data-card-id="${card.id}">
-                        <img src="${card.image_url}" alt="${card.name}" loading="lazy">
-                        <div class="ygo-card-details">
-                            <span class="ygo-card-name">${card.name}</span>
-                            <span class="ygo-card-quantity">x${quantity}</span>
-                        </div>
-                    </div>`
+                    <img src="${card.image_url}" alt="${card.name}" loading="lazy">
+                    <div class="ygo-card-details">
+                        <span class="ygo-card-name">${card.name}</span>
+                        <span class="ygo-card-quantity">x${quantity}</span>
+                    </div>
+                </div>`
           };
         } catch (err) {
-          console.error("Error processing card entry:", err);
+          console.error('Error processing card entry:', err);
           return {
             name: entry,
             error: true,
             html: `<div class="ygo-card-error">
-                        <span class="ygo-error-msg">${err.message}</span>
-                    </div>`
+                    <span class="ygo-error-msg">${err.message}</span>
+                </div>`
           };
         }
       });
-      const cardsHtml = processedCards.map((card) => card.html).join("");
+
+      const cardsHtml = processedCards.map(card => card.html).join('');
       sectionEl.innerHTML += `<div class="ygo-cards">${cardsHtml}</div>`;
       container.appendChild(sectionEl);
       return processedCards;
     } catch (err) {
-      console.error("Error rendering deck section:", err);
-      container.innerHTML += `<div class="ygo-error">\u274C Error rendering ${section} deck: ${err.message}</div>`;
+      console.error('Error rendering deck section:', err);
+      container.innerHTML += `<div class="ygo-error">❌ Error rendering ${section} deck: ${err.message}</div>`;
       return [];
     }
   }
