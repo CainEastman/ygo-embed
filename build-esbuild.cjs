@@ -7,7 +7,7 @@ if (!fs.existsSync('dist')) {
   fs.mkdirSync('dist');
 }
 
-console.log('Starting build process...');
+console.log('Starting build process for v3.3...');
 
 // Read the CSS file
 const cssContent = fs.readFileSync(path.join(__dirname, 'js/v3/modules/styles.css'), 'utf8');
@@ -29,7 +29,7 @@ esbuild.build({
   minify: true,
   sourcemap: true,
   format: 'iife',
-  outfile: path.join(__dirname, 'dist/ygo-embed-v3-bundled.min.js'),
+  outfile: path.join(__dirname, 'dist/ygo-embed-v3.3.min.js'),
 }).then(() => {
   console.log('✅ Minified build completed successfully!');
   
@@ -40,15 +40,15 @@ esbuild.build({
     minify: false,
     sourcemap: true,
     format: 'iife',
-    outfile: path.join(__dirname, 'dist/ygo-embed-v3-bundled.js'),
+    outfile: path.join(__dirname, 'dist/ygo-embed-v3.3.js'),
   });
 }).then(() => {
   console.log('✅ Non-minified build completed successfully!');
   
   try {
     // Get file sizes
-    const minSize = fs.statSync(path.join(__dirname, 'dist/ygo-embed-v3-bundled.min.js')).size;
-    const fullSize = fs.statSync(path.join(__dirname, 'dist/ygo-embed-v3-bundled.js')).size;
+    const minSize = fs.statSync(path.join(__dirname, 'dist/ygo-embed-v3.3.min.js')).size;
+    const fullSize = fs.statSync(path.join(__dirname, 'dist/ygo-embed-v3.3.js')).size;
     
     console.log(`📊 File sizes:
     - Minified: ${(minSize / 1024).toFixed(2)} KB
@@ -56,6 +56,10 @@ esbuild.build({
 
     // Clean up temporary file
     fs.unlinkSync(tempJsPath);
+    
+    console.log(`\n📦 Generated files:
+    - dist/ygo-embed-v3.3.min.js
+    - dist/ygo-embed-v3.3.js`);
   } catch (error) {
     console.error('Error getting file sizes:', error);
   }

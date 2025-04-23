@@ -261,80 +261,74 @@ document.addEventListener('DOMContentLoaded', async function () {
     },
     
     async fetchCardBatch(cardNames) {
-        // For multiple cards, use the fname parameter which accepts fuzzy matching
-        // This is more efficient than multiple API calls
-        const uniqueNames = [...new Set(cardNames)].map(name => name.trim());
+        const uniqueNames = [...new Set(cardNames.map(name => name.trim()))];
         
         if (uniqueNames.length === 0) return [];
         
         try {
-        // Create a controller for timeout
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
-        
-        let response;
-        if (uniqueNames.length === 1) {
-            // Single card request - use exact name matching
-            response = await fetch(
-            `${API_BASE_URL}/cardinfo.php?name=${encodeURIComponent(uniqueNames[0])}`,
-            { signal: controller.signal }
-            );
-        } else {
-            // Multiple card request - we'll use a POST request to handle larger batches
-            // This is more efficient than multiple GET requests
-            const params = new URLSearchParams();
-            uniqueNames.forEach(name => params.append('fname', name));
+            // Create a controller for timeout
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
             
-            response = await fetch(`${API_BASE_URL}/cardinfo.php`, {
-            method: 'POST',
-            body: params,
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded'
-            },
-            signal: controller.signal
+            let response;
+            if (uniqueNames.length === 1) {
+                // Single card request - use exact name matching
+                response = await fetch(
+                    `${API_BASE_URL}/cardinfo.php?name=${encodeURIComponent(uniqueNames[0])}`,
+                    { signal: controller.signal }
+                );
+            } else {
+                // Multiple card request - use fname parameter for each card
+                const params = new URLSearchParams();
+                uniqueNames.forEach(name => params.append('fname', name));
+                
+                // Construct URL with multiple fname parameters
+                response = await fetch(`${API_BASE_URL}/cardinfo.php?${params.toString()}`, {
+                    method: 'GET',
+                    signal: controller.signal
+                });
+            }
+            
+            clearTimeout(timeoutId);
+            
+            if (!response.ok) {
+                throw new Error(`API responded with status ${response.status}`);
+            }
+            
+            const data = await response.json();
+            
+            if (!data.data || data.data.length === 0) {
+                throw new Error('No card data found');
+            }
+            
+            // Store all retrieved cards in cache
+            data.data.forEach(card => {
+                const cardName = card.name.trim();
+                
+                // Store complete card data
+                cardCache[cardName] = {
+                    ...card,
+                    imgSmall: card.card_images[0].image_url_small,
+                    imgLarge: card.card_images[0].image_url,
+                    complete: true
+                };
             });
-        }
-        
-        clearTimeout(timeoutId);
-        
-        if (!response.ok) {
-            throw new Error(`API responded with status ${response.status}`);
-        }
-        
-        const data = await response.json();
-        
-        if (!data.data || data.data.length === 0) {
-            throw new Error('No card data found');
-        }
-        
-        // Store all retrieved cards in cache
-        data.data.forEach(card => {
-            const cardName = card.name.trim();
             
-            // Store complete card data
-            cardCache[cardName] = {
-            ...card,
-            imgSmall: card.card_images[0].image_url_small,
-            imgLarge: card.card_images[0].image_url,
-            complete: true
-            };
-        });
-        
-        // Check if we got all the cards we requested
-        const missingCards = uniqueNames.filter(name => 
-            !Object.keys(cardCache).some(key => 
-            key.toLowerCase() === name.toLowerCase()
-            )
-        );
-        
-        if (missingCards.length > 0) {
-            console.warn(`⚠️ Some cards were not found in the API: ${missingCards.join(', ')}`);
-        }
-        
-        return data.data;
+            // Check if we got all the cards we requested
+            const missingCards = uniqueNames.filter(name => 
+                !Object.keys(cardCache).some(key => 
+                    key.toLowerCase() === name.toLowerCase()
+                )
+            );
+            
+            if (missingCards.length > 0) {
+                console.warn(`⚠️ Some cards were not found in the API: ${missingCards.join(', ')}`);
+            }
+            
+            return data.data;
         } catch (err) {
-        console.error(`❌ Batch fetch error for cards: ${uniqueNames.join(', ')}`, err);
-        throw err;
+            console.error(`❌ Batch fetch error for cards: ${uniqueNames.join(', ')}`, err);
+            throw err;
         }
     }
     };

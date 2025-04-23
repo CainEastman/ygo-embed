@@ -1,4 +1,10 @@
 {
+  "name": "ygo-embed",
+  "version": "3.3.0",
+  "type": "module",
+  "scripts": {
+    "build": "node build-esbuild.cjs"
+  },
   "devDependencies": {
     "esbuild": "^0.25.3"
   }

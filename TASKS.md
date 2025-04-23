@@ -94,4 +94,27 @@
 
 - [ ] **Localization**:
   - [ ] Support multiple languages
-  - [ ] OCG/TCG naming variants 
+  - [ ] OCG/TCG naming variants
+
+## Active Issues
+
+### Decklist Rendering Bug (High Priority)
+- **Issue**: Decklists not rendering on live site using v3 bundled file
+- **URL**: https://gatheringgames.co.uk/community/blog/yu-gi-oh-blue-eyes-white-destiny-structure-deck-beginners-guide
+- **Context**: Introduced in v3 when adding batch API calls
+- **Status**: Fixed in v3.3
+- **Fix Details**: 
+  - Changed batch API requests from POST to GET
+  - Fixed API endpoint URL construction with multiple fname parameters
+  - Removed duplicate constant declarations
+  - Updated module imports to use proper constant structure
+- **Changes Made**:
+  - Updated api.js to use GET requests with proper URL parameters
+  - Fixed constant imports from constants.js
+  - Generated new v3.3 bundles with fixes
+- **Next Steps**:
+  - Deploy new v3.3 bundles to CDN
+  - Update live site to use v3.3 version
+  - Monitor for any remaining issues
+
+## Completed Tasks 

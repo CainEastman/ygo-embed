@@ -44,8 +44,9 @@ The codebase is organized into modules following the single responsibility princ
 
 3. **API Module** (`modules/api.js`)
    - Handles communication with YGOPRODeck API
-   - Manages request queue and batching
+   - Uses GET requests for card data fetching
    - Implements error handling and timeouts
+   - Manages request queue and batching
 
 4. **Card Fetcher Module** (`modules/cardFetcher.js`)
    - Provides functions to fetch individual cards
@@ -138,14 +139,19 @@ The codebase is organized into modules following the single responsibility princ
 ### Versioning Strategy
 - Semantic versioning (MAJOR.MINOR.PATCH)
 - Version reflected in cache keys for proper invalidation
-- Current version: v3.1
+- Current version: v3.3
+- Changes tracked in version history:
+  - v3.3: Switched to GET requests for API calls
+  - v3.2: Integrated CSS bundling and automated CDN cache management
 
 ### Build Process
-- Use esbuild for bundling modules into distributable files
-- Build both minified and non-minified versions
+- Use esbuild for bundling modules and CSS into distributable files
+- CSS is now bundled with JavaScript for simpler deployment
+- Build both minified and non-minified versions with CSS included
 - Include source maps for debugging
 - Maintain both modular version (for development) and bundled version (for distribution)
-- Build scripts: build.bat (Windows) and build-esbuild.js (Node.js)
+- Build script: build-esbuild.cjs (Node.js)
+- Automated jsDelivr cache purging on file changes
 
 ### Testing Strategy
 - Manual testing across browsers
@@ -154,8 +160,9 @@ The codebase is organized into modules following the single responsibility princ
 - Mobile device testing
 
 ### Deployment
-- Provide both standard and modular versions
-- Host on CDN for production use
+- Provide bundled version with integrated CSS
+- Host on CDN (jsDelivr) for production use
+- Automatic cache purging for instant updates
 - Document integration process for various CMS platforms
 
 ## Future Extensibility

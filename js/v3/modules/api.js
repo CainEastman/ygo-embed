@@ -2,10 +2,7 @@
 // Implements request queue and batch API requests
 
 import { addCardToCache } from './cache.js';
-
-const API_BASE_URL = 'https://db.ygoprodeck.com/api/v7';
-const REQUEST_BATCH_SIZE = 10; // Maximum number of cards to request at once
-const REQUEST_TIMEOUT = 10000; // 10 seconds timeout for API requests
+import { API } from './constants.js';
 
 /**
  * Set up the request queue for batched API requests
@@ -34,7 +31,7 @@ export function setupRequestQueue(cardCache) {
             this.inProgress = true;
             
             // Take a batch of requests from the queue
-            const batch = this.pending.splice(0, REQUEST_BATCH_SIZE);
+            const batch = this.pending.splice(0, API.BATCH_SIZE);
             const cardNames = batch.map(item => item.cardName);
             
             try {
@@ -67,36 +64,30 @@ export function setupRequestQueue(cardCache) {
         },
         
         async fetchCardBatch(cardNames) {
-            // For multiple cards, use the fname parameter which accepts fuzzy matching
-            // This is more efficient than multiple API calls
-            const uniqueNames = [...new Set(cardNames)].map(name => name.trim());
+            const uniqueNames = [...new Set(cardNames.map(name => name.trim()))];
             
             if (uniqueNames.length === 0) return [];
             
             try {
                 // Create a controller for timeout
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
+                const timeoutId = setTimeout(() => controller.abort(), API.TIMEOUT);
                 
                 let response;
                 if (uniqueNames.length === 1) {
                     // Single card request - use exact name matching
                     response = await fetch(
-                        `${API_BASE_URL}/cardinfo.php?name=${encodeURIComponent(uniqueNames[0])}`,
+                        `${API.BASE_URL}/cardinfo.php?name=${encodeURIComponent(uniqueNames[0])}`,
                         { signal: controller.signal }
                     );
                 } else {
-                    // Multiple card request - we'll use a POST request to handle larger batches
-                    // This is more efficient than multiple GET requests
+                    // Multiple card request - use fname parameter for each card
                     const params = new URLSearchParams();
                     uniqueNames.forEach(name => params.append('fname', name));
                     
-                    response = await fetch(`${API_BASE_URL}/cardinfo.php`, {
-                        method: 'POST',
-                        body: params,
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded'
-                        },
+                    // Construct URL with multiple fname parameters
+                    response = await fetch(`${API.BASE_URL}/cardinfo.php?${params.toString()}`, {
+                        method: 'GET',
                         signal: controller.signal
                     });
                 }
@@ -149,7 +140,7 @@ export async function checkApiAvailability() {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 5000);
         
-        const response = await fetch(`${API_BASE_URL}/checkDBVer.php`, {
+        const response = await fetch(`${API.BASE_URL}/checkDBVer.php`, {
             signal: controller.signal
         });
         

@@ -13,7 +13,7 @@ export const API = {
  * Cache constants
  */
 export const CACHE = {
-    VERSION: 'ygo-cache-v2',
+    VERSION: 'ygo-cache-v3.3',
     EXPIRY: 7 * 24 * 60 * 60 * 1000, // 7 days in milliseconds
     SAVE_INTERVAL: 60000 // 1 minute
 };

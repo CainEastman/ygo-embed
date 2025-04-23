@@ -13,6 +13,8 @@ A JavaScript library for embedding Yu-Gi-Oh! cards and decklists in web pages, w
 - **Error Handling**: Improved resilience with timeout handling and error recovery
 - **Memory Management**: Smart cache pruning when storage limits are reached
 - **Modular Structure**: Code organized into modules for better maintainability
+- **Bundled CSS**: Styles are now bundled with JavaScript for simpler deployment
+- **Automatic CDN Updates**: Integrated jsDelivr cache purging for instant updates
 
 ## Usage
 
@@ -75,7 +77,7 @@ The script automatically initializes when the page loads.
 
 ## Building from Source
 
-This project uses esbuild to bundle the modular JavaScript files into a single distributable file.
+This project uses esbuild to bundle the modular JavaScript files and CSS into a single distributable file.
 
 ### Prerequisites
 - Node.js (14.x or higher recommended)
@@ -94,28 +96,19 @@ This project uses esbuild to bundle the modular JavaScript files into a single d
    ```
 
 ### Building
-There are two ways to build the project:
-
-#### Option 1: Using the batch file (Windows)
-Simply run the batch file:
-```
-.\build.bat
-```
-
-#### Option 2: Using the Node.js script
 Run the build script:
 ```
-node build-esbuild.js
+npm run build
 ```
 
-Both methods will generate two versions in the `dist` directory:
-- `ygo-embed-v3.min.js`: Minified version for production use
-- `ygo-embed-v3.js`: Non-minified version for development/debugging
+This will generate two versions in the `dist` directory:
+- `ygo-embed-v3.3.min.js`: Minified version for production use (includes CSS)
+- `ygo-embed-v3.3.js`: Non-minified version for development/debugging (includes CSS)
 
 ### Manual Build Command
 If you prefer to run esbuild directly:
 ```
-npx esbuild js/v3/ygo-embed-v3-modular.js --bundle --minify --sourcemap --format=iife --outfile=dist/ygo-embed-v3.min.js
+npx esbuild js/v3/ygo-embed-v3-modular.js --bundle --minify --sourcemap --format=iife --outfile=dist/ygo-embed-v3.3.min.js
 ```
 
 ## Module Structure
@@ -137,8 +130,10 @@ The modular version is organized into the following modules:
 
 - **v1.0**: Basic card embed and hover functionality
 - **v2.0**: Added localStorage caching to reduce API calls
-- **v3.0**: Added batch API requests, improved error handling, and memory management for better performance with decklists
-- **v3.1**: Restructured code into modules for better organization and maintainability
+- **v3.0**: Added batch API requests, improved error handling, and memory management
+- **v3.1**: Restructured code into modules for better organization
+- **v3.2**: Integrated CSS bundling and automated CDN cache management
+- **v3.3**: Fixed decklist rendering with corrected batch API requests
 
 ## How It Works
 
@@ -150,14 +145,11 @@ The modular version is organized into the following modules:
 
 ## CDN Usage
 
-You can use jsDelivr CDN to serve the YGO Embed files without hosting them yourself:
+You can use jsDelivr CDN to serve the YGO Embed files without hosting them yourself. Since CSS is now bundled with the JavaScript, you only need to include one file:
 
 ```html
-<!-- CSS -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/CainEastman/ygo-embed@main/js/v3/ygo-embed-v3.css">
-
-<!-- JavaScript (Minified) -->
-<script src="https://cdn.jsdelivr.net/gh/CainEastman/ygo-embed@main/dist/ygo-embed-v3.min.js"></script>
+<!-- JavaScript (Minified) - includes CSS -->
+<script src="https://cdn.jsdelivr.net/gh/CainEastman/ygo-embed@main/dist/ygo-embed-v3.3.min.js"></script>
 ```
 
 ### About jsDelivr CDN Cache
@@ -165,10 +157,13 @@ You can use jsDelivr CDN to serve the YGO Embed files without hosting them yours
 This repository includes an automatic cache purging system that ensures the CDN always serves the latest version of your files:
 
 - A GitHub Action workflow runs whenever changes are pushed to the main branch
-- This action automatically purges the jsDelivr cache for affected files
+- The action automatically purges the jsDelivr cache when changes are made to the `js` or `dist` directories
+- Cache purging happens immediately after successful pushes to the main branch
 - Without this action, jsDelivr typically caches files from the `@main` branch for up to 12 hours
 
-If you need to manually purge the cache for a specific file, you can use the [jsDelivr Purge Tool](https://www.jsdelivr.com/tools/purge).
+If you need to manually purge the cache, you can:
+1. Use the [jsDelivr Purge Tool](https://www.jsdelivr.net/tools/purge)
+2. Trigger the purge workflow manually through GitHub Actions
 
 ## Credits
 
