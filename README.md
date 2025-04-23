@@ -15,6 +15,9 @@ A JavaScript library for embedding Yu-Gi-Oh! cards and decklists in web pages, w
 - **Modular Structure**: Code organized into modules for better maintainability
 - **Bundled CSS**: Styles are now bundled with JavaScript for simpler deployment
 - **Automatic CDN Updates**: Integrated jsDelivr cache purging for instant updates
+- **Smart Card Matching**: Improved card name matching with exact and partial match support
+- **Enhanced Error Handling**: Better error visualization and recovery for deck lists
+- **Flexible Card Formats**: Support for various card quantity formats (e.g., "3x Card" or "Card x3")
 
 ## Usage
 
@@ -33,9 +36,9 @@ This will be transformed into a detailed card display with image, stats, text an
 To embed a deck list, use the following format:
 
 ```html
-<p>deck::main::["Blue-Eyes White Dragon", "Dark Magician x2", "Pot of Greed"]</p>
+<p>deck::main::["Blue-Eyes White Dragon", "Dark Magician x2", "3x Pot of Greed"]</p>
 <p>deck::extra::["Blue-Eyes Twin Burst Dragon", "Hieratic Seal Of The Heavenly Spheres"]</p>
-<p>deck::side::["Ash Blossom & Joyous Spring x3"]</p>
+<p>deck::side::["3x Ash Blossom & Joyous Spring"]</p>
 ```
 
 Valid section types are:
@@ -43,6 +46,16 @@ Valid section types are:
 - `extra`: Extra Deck
 - `side`: Side Deck
 - `upgrade`: Upgrade suggestions (no header)
+
+Both formats are supported for card quantities:
+- `Card Name x3`
+- `3x Card Name`
+
+The deck list renderer will:
+- Normalize card names for better matching
+- Handle partial matches when exact matches aren't found
+- Show clear error messages for missing cards
+- Display card quantities prominently
 
 ### Card References in Content
 
@@ -121,8 +134,8 @@ The modular version is organized into the following modules:
 - **Card Fetcher** (`js/v3/modules/cardFetcher.js`): Provides functions to fetch card data
 - **Hover Preview** (`js/v3/modules/hoverPreview.js`): Implements card hover effects
 - **Card Embed** (`js/v3/modules/cardEmbed.js`): Renders individual card displays
-- **Decklist Renderer** (`js/v3/modules/decklistRenderer.js`): Renders collections of cards by deck section
-- **Content Parser** (`js/v3/modules/contentParser.js`): Converts special markup in content
+- **Decklist Renderer** (`js/v3/modules/decklistRenderer.js`): Renders collections of cards by deck section with smart name matching
+- **Content Parser** (`js/v3/modules/contentParser.js`): Converts special markup with improved error handling
 - **Styles** (`js/v3/modules/styles.js`): Handles CSS loading
 - **Constants** (`js/v3/modules/constants.js`): Shared constants used across modules
 
@@ -134,6 +147,7 @@ The modular version is organized into the following modules:
 - **v3.1**: Restructured code into modules for better organization
 - **v3.2**: Integrated CSS bundling and automated CDN cache management
 - **v3.3**: Fixed decklist rendering with corrected batch API requests
+- **v3.4**: Enhanced deck list rendering with smart card matching and improved error handling
 
 ## How It Works
 
@@ -142,6 +156,10 @@ The modular version is organized into the following modules:
 - **Queue System**: Requests are queued and processed in batches for efficiency
 - **Mobile Detection**: Different interaction methods for desktop and mobile users
 - **Responsive Design**: Adapts to different screen sizes and devices
+- **Smart Card Matching**: Uses a two-stage matching process for card names:
+  1. Attempts exact match after normalization
+  2. Falls back to intelligent partial matching
+- **Error Visualization**: Clear visual feedback for missing or invalid cards
 
 ## CDN Usage
 

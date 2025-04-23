@@ -65,13 +65,22 @@ The codebase is organized into modules following the single responsibility princ
 
 7. **Decklist Renderer Module** (`modules/decklistRenderer.js`)
    - Renders collections of cards by deck section
-   - Handles card quantities
+   - Handles card quantities in multiple formats
    - Creates grid layouts for decks
+   - Implements smart card name matching:
+     * Name normalization with special character handling
+     * Two-stage matching (exact -> partial)
+     * Length-based scoring for partial matches
+   - Provides clear error visualization
+   - Returns processed card data for potential reuse
 
 8. **Content Parser Module** (`modules/contentParser.js`)
    - Converts special markup in content
    - Transforms paragraphs into interactive elements
    - Handles card name variations and case sensitivity
+   - Supports multiple quantity formats
+   - Provides detailed error messages
+   - Implements graceful error recovery
 
 9. **Styles Module** (`modules/styles.js`)
    - Ensures required CSS is loaded
@@ -94,9 +103,10 @@ The codebase is organized into modules following the single responsibility princ
 2. Parse page for card references on load
 3. Check localStorage cache for existing data
 4. Queue missing cards for batch API requests
-5. Render cards as data becomes available
-6. Handle interactive events (hover, click)
-7. Save card data to cache periodically and on unload
+5. Process card names with smart matching
+6. Render cards with error handling
+7. Handle interactive events (hover, click)
+8. Save card data to cache periodically and on unload
 
 ## Optimization Strategy
 
@@ -139,8 +149,9 @@ The codebase is organized into modules following the single responsibility princ
 ### Versioning Strategy
 - Semantic versioning (MAJOR.MINOR.PATCH)
 - Version reflected in cache keys for proper invalidation
-- Current version: v3.3
+- Current version: v3.4
 - Changes tracked in version history:
+  - v3.4: Enhanced deck list rendering with smart card matching
   - v3.3: Switched to GET requests for API calls
   - v3.2: Integrated CSS bundling and automated CDN cache management
 

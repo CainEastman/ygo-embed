@@ -1,5 +1,5 @@
-// Decklist Renderer module - handles rendering of deck lists
-// Provides functionality to render collections of cards organized by deck section
+// Deck List Renderer module - handles rendering deck lists with card images and details
+// Provides functionality to display deck sections with proper layout and error handling
 
 /**
  * Render all decklists on the page
@@ -29,111 +29,160 @@ export function renderDecklists(context) {
 }
 
 /**
- * Render a single deck section
- * @param {HTMLElement} section The section element to render into
- * @param {Array<string>} names Array of card names with quantities
- * @param {string} deckType The type of deck section (main, extra, side, upgrade)
- * @param {Object} titleMap Map of deck types to titles
- * @param {Function} fetchCards Function to fetch card data
+ * Normalize a card name for comparison
+ * @param {string} name The card name to normalize
+ * @returns {string} The normalized card name
  */
-async function renderDeckSection(section, names, deckType, titleMap, fetchCards) {
-    const container = document.createElement('div');
-    container.className = 'ygo-deck-section';
-    
-    // Add section title if applicable
-    if (titleMap[deckType]) {
-        container.innerHTML = `<h3 class="ygo-deck-title">${titleMap[deckType]}</h3>`;
+function normalizeCardName(name) {
+    return name
+        .toLowerCase()
+        .replace(/[^\w\s-]/g, '') // Remove special chars except hyphen
+        .replace(/\s+/g, ' ')     // Normalize whitespace
+        .trim();
+}
+
+/**
+ * Parse quantity from a deck list entry
+ * @param {string} entry The deck list entry (e.g. "Dark Magician x3" or "3x Blue-Eyes")
+ * @returns {{name: string, quantity: number}} The parsed name and quantity
+ */
+function parseQuantity(entry) {
+    const match = entry.match(/^(?:(\d+)\s*x\s*(.+)|(.+?)\s*x\s*(\d+)|(.+))$/i);
+    if (!match) {
+        throw new Error(`Invalid card entry format: ${entry}`);
     }
     
-    const grid = document.createElement('div');
-    grid.className = 'ygo-decklist-grid';
+    // Handle different formats
+    const name = (match[2] || match[3] || match[5] || '').trim();
+    const quantity = parseInt(match[1] || match[4] || '1', 10);
     
-    // Extract all card names and quantities
-    const cardsToFetch = [];
-    const cardQuantities = {};
+    return { name, quantity };
+}
+
+/**
+ * Find best matching card from available cards
+ * @param {string} searchName The card name to search for
+ * @param {Array<Object>} availableCards Array of card objects with names
+ * @returns {Object|null} The best matching card or null if no match
+ */
+function findBestMatch(searchName, availableCards) {
+    const normalized = normalizeCardName(searchName);
     
-    for (let entry of names) {
-        // Improved quantity parsing regex
-        const match = entry.match(/^(.+?)(?:\s*x\s*(\d+))?$/i);
-        if (!match) continue;
-        
-        const cardName = match[1].trim();
-        const qty = parseInt(match[2]) || 1;
-        
-        cardsToFetch.push(cardName);
-        cardQuantities[cardName.toLowerCase()] = qty; // Store with lowercase key
+    // Try exact match first
+    const exactMatch = availableCards.find(card => 
+        normalizeCardName(card.name) === normalized
+    );
+    if (exactMatch) return exactMatch;
+    
+    // Try partial matches
+    const partialMatches = availableCards.filter(card => {
+        const cardNorm = normalizeCardName(card.name);
+        return cardNorm.includes(normalized) || normalized.includes(cardNorm);
+    });
+    
+    // Return closest match by length if any found
+    if (partialMatches.length > 0) {
+        return partialMatches.reduce((best, current) => {
+            const bestDiff = Math.abs(normalizeCardName(best.name).length - normalized.length);
+            const currentDiff = Math.abs(normalizeCardName(current.name).length - normalized.length);
+            return currentDiff < bestDiff ? current : best;
+        });
     }
     
+    return null;
+}
+
+/**
+ * Render a deck section with card images and details
+ * @param {HTMLElement} container The deck list container element
+ * @param {string} section The deck section name
+ * @param {Array<string>} cardList List of card entries
+ * @param {Array<Object>} availableCards Array of available card objects
+ */
+export async function renderDeckSection(container, section, cardList, availableCards) {
     try {
-        // Fetch all cards in the decklist at once
-        const allCards = await fetchCards(cardsToFetch);
+        // Create section container
+        const sectionEl = document.createElement('div');
+        sectionEl.className = `ygo-deck-section ygo-deck-${section}`;
+        sectionEl.innerHTML = `<h3>${section.toUpperCase()} DECK</h3>`;
         
-        // Map the cards by normalized name for easy lookup
-        const cardsByName = {};
-        allCards.forEach(card => {
-            if (!card) return;
-            // Store with multiple name variations
-            const normalizedName = card.name.toLowerCase().trim();
-            cardsByName[normalizedName] = card;
-            // Store without punctuation
-            const noPunctName = normalizedName.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "");
-            cardsByName[noPunctName] = card;
+        // Process each card entry
+        const processedCards = cardList.map(entry => {
+            try {
+                const { name, quantity } = parseQuantity(entry);
+                const card = findBestMatch(name, availableCards);
+                
+                if (!card) {
+                    console.warn(`Card not found: ${name}`);
+                    return {
+                        name,
+                        quantity,
+                        error: true,
+                        html: `<div class="ygo-card-missing">
+                            <span class="ygo-card-name">${name}</span>
+                            <span class="ygo-card-quantity">x${quantity}</span>
+                            <span class="ygo-error-msg">Card not found</span>
+                        </div>`
+                    };
+                }
+                
+                return {
+                    ...card,
+                    quantity,
+                    html: `<div class="ygo-card-entry" data-card-id="${card.id}">
+                        <img src="${card.image_url}" alt="${card.name}" loading="lazy">
+                        <div class="ygo-card-details">
+                            <span class="ygo-card-name">${card.name}</span>
+                            <span class="ygo-card-quantity">x${quantity}</span>
+                        </div>
+                    </div>`
+                };
+            } catch (err) {
+                console.error('Error processing card entry:', err);
+                return {
+                    name: entry,
+                    error: true,
+                    html: `<div class="ygo-card-error">
+                        <span class="ygo-error-msg">${err.message}</span>
+                    </div>`
+                };
+            }
         });
         
-        // Create DOM elements for each card
-        for (let cardName of cardsToFetch) {
-            const normalizedName = cardName.toLowerCase().trim();
-            const noPunctName = normalizedName.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "");
-            
-            // Try different name variations
-            const card = cardsByName[normalizedName] || 
-                        cardsByName[noPunctName] ||
-                        Object.values(cardsByName).find(c => 
-                            c.name.toLowerCase().includes(normalizedName) ||
-                            normalizedName.includes(c.name.toLowerCase())
-                        );
-            
-            if (!card) {
-                console.warn(`❌ Could not find card: ${cardName}`);
-                continue;
-            }
-            
-            const qty = cardQuantities[normalizedName] || 1;
-            
-            // Create card elements
-            for (let i = 0; i < qty; i++) {
-                const cardElement = createCardElement(card, cardName);
-                grid.appendChild(cardElement);
-            }
-        }
+        // Add cards to section
+        const cardsHtml = processedCards.map(card => card.html).join('');
+        sectionEl.innerHTML += `<div class="ygo-cards">${cardsHtml}</div>`;
         
-        container.appendChild(grid);
-        section.innerHTML = '';
-        section.appendChild(container);
+        // Add section to container
+        container.appendChild(sectionEl);
+        
+        // Return processed cards for potential further use
+        return processedCards;
     } catch (err) {
-        console.error('Error loading decklist:', err);
-        section.innerHTML = `<div class="ygo-error">❌ Error loading decklist: ${err.message}</div>`;
+        console.error('Error rendering deck section:', err);
+        container.innerHTML += `<div class="ygo-error">❌ Error rendering ${section} deck: ${err.message}</div>`;
+        return [];
     }
 }
 
 /**
  * Create a card element for the decklist
- * @param {Object} card The card data
- * @param {string} cardName The original card name from the list
- * @returns {HTMLElement} The card element
+ * @param {Object} card Card data from API
+ * @param {string} cardName Original card name from decklist
+ * @returns {HTMLElement} Card element
  */
 function createCardElement(card, cardName) {
     const cardDiv = document.createElement('div');
     cardDiv.className = 'ygo-decklist-card';
-
+    
     const img = document.createElement('img');
     img.src = card.card_images[0].image_url_small;
     img.alt = cardName;
     img.title = cardName;
-    img.loading = 'lazy'; // Lazy load images
+    img.loading = 'lazy';
     img.style.cursor = 'zoom-in';
     img.addEventListener('click', () => window.open(card.card_images[0].image_url, '_blank'));
-
+    
     const nameLink = document.createElement('a');
     nameLink.textContent = cardName;
     nameLink.href = card.card_images[0].image_url;
@@ -145,7 +194,6 @@ function createCardElement(card, cardName) {
     nameLink.style.textDecoration = 'none';
     nameLink.style.cursor = 'pointer';
     
-    // Add card type class for styling
     if (card.type) {
         if (card.type.includes('Monster')) {
             cardDiv.classList.add('ygo-monster-card');
@@ -155,9 +203,8 @@ function createCardElement(card, cardName) {
             cardDiv.classList.add('ygo-trap-card');
         }
     }
-
+    
     cardDiv.appendChild(img);
     cardDiv.appendChild(nameLink);
-    
     return cardDiv;
 }
