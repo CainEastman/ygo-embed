@@ -11,7 +11,7 @@ export function renderDecklists(context) {
     document.querySelectorAll('.ygo-decklist').forEach(async section => {
         const titleMap = {
             main: 'Main Deck',
-            extra: 'Extra Deck',
+            extra: 'Extra Deck', 
             side: 'Side Deck',
             upgrade: null
         };
@@ -53,47 +53,67 @@ async function renderDeckSection(section, names, deckType, titleMap, fetchCards)
     const cardQuantities = {};
     
     for (let entry of names) {
-        const [name, qtyStr] = entry.split(/\sx(\d+)$/);
-        const cardName = name.trim();
-        const qty = parseInt(qtyStr) || 1;
+        // Improved quantity parsing regex
+        const match = entry.match(/^(.+?)(?:\s*x\s*(\d+))?$/i);
+        if (!match) continue;
+        
+        const cardName = match[1].trim();
+        const qty = parseInt(match[2]) || 1;
         
         cardsToFetch.push(cardName);
-        cardQuantities[cardName] = qty;
+        cardQuantities[cardName.toLowerCase()] = qty; // Store with lowercase key
     }
     
-    // Fetch all cards in the decklist at once
-    const allCards = await fetchCards(cardsToFetch);
-    
-    // Map the cards by name for easy lookup
-    const cardsByName = {};
-    allCards.forEach(card => {
-        cardsByName[card.name.trim()] = card;
-    });
-    
-    // Create DOM elements for each card
-    for (let cardName of cardsToFetch) {
-        // Find the card by name (case-insensitive matching)
-        const card = cardsByName[cardName] || 
-                  Object.values(cardsByName).find(c => 
-                      c.name.toLowerCase() === cardName.toLowerCase());
+    try {
+        // Fetch all cards in the decklist at once
+        const allCards = await fetchCards(cardsToFetch);
         
-        if (!card) {
-            console.warn(`❌ Could not find card: ${cardName}`);
-            continue;
+        // Map the cards by normalized name for easy lookup
+        const cardsByName = {};
+        allCards.forEach(card => {
+            if (!card) return;
+            // Store with multiple name variations
+            const normalizedName = card.name.toLowerCase().trim();
+            cardsByName[normalizedName] = card;
+            // Store without punctuation
+            const noPunctName = normalizedName.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "");
+            cardsByName[noPunctName] = card;
+        });
+        
+        // Create DOM elements for each card
+        for (let cardName of cardsToFetch) {
+            const normalizedName = cardName.toLowerCase().trim();
+            const noPunctName = normalizedName.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "");
+            
+            // Try different name variations
+            const card = cardsByName[normalizedName] || 
+                        cardsByName[noPunctName] ||
+                        Object.values(cardsByName).find(c => 
+                            c.name.toLowerCase().includes(normalizedName) ||
+                            normalizedName.includes(c.name.toLowerCase())
+                        );
+            
+            if (!card) {
+                console.warn(`❌ Could not find card: ${cardName}`);
+                continue;
+            }
+            
+            const qty = cardQuantities[normalizedName] || 1;
+            
+            // Create card elements
+            for (let i = 0; i < qty; i++) {
+                const cardElement = createCardElement(card, cardName);
+                grid.appendChild(cardElement);
+            }
         }
         
-        const qty = cardQuantities[cardName];
-        
-        // Create card elements
-        for (let i = 0; i < qty; i++) {
-            const cardElement = createCardElement(card, cardName);
-            grid.appendChild(cardElement);
-        }
+        container.appendChild(grid);
+        section.innerHTML = '';
+        section.appendChild(container);
+    } catch (err) {
+        console.error('Error loading decklist:', err);
+        section.innerHTML = `<div class="ygo-error">❌ Error loading decklist: ${err.message}</div>`;
     }
-    
-    container.appendChild(grid);
-    section.innerHTML = '';
-    section.appendChild(container);
 }
 
 /**
@@ -140,4 +160,4 @@ function createCardElement(card, cardName) {
     cardDiv.appendChild(nameLink);
     
     return cardDiv;
-} 
+}
