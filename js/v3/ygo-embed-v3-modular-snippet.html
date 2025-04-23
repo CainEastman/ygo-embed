@@ -1,0 +1,28 @@
+<!-- YGO Card Embed Script v3.0 Modular Version via jsDelivr -->
+<script type="module">
+    // Load main module from jsDelivr
+    const baseUrl = "https://cdn.jsdelivr.net/gh/CainEastman/ygo-embed@main/js/v3";
+  
+    // Import main module that will load all other modules
+    import(`${baseUrl}/ygo-embed-v3 a.js`)
+      .then(() => console.log("✅ YGO embed script v3.0 modular version loaded successfully"))
+      .catch(err => console.error("❌ Error loading YGO script:", err));
+  
+    // Define fallback paths for modules to ensure they load from the same location
+    document.head.appendChild(Object.assign(document.createElement('script'), {
+      type: 'importmap',
+      textContent: JSON.stringify({
+        imports: {
+          './modules/cache.js': `${baseUrl}/modules/cache.js`,
+          './modules/api.js': `${baseUrl}/modules/api.js`,
+          './modules/cardFetcher.js': `${baseUrl}/modules/cardFetcher.js`,
+          './modules/hoverPreview.js': `${baseUrl}/modules/hoverPreview.js`,
+          './modules/cardEmbed.js': `${baseUrl}/modules/cardEmbed.js`, 
+          './modules/decklistRenderer.js': `${baseUrl}/modules/decklistRenderer.js`,
+          './modules/contentParser.js': `${baseUrl}/modules/contentParser.js`,
+          './modules/styles.js': `${baseUrl}/modules/styles.js`,
+          './modules/constants.js': `${baseUrl}/modules/constants.js`
+        }
+      })
+    }));
+  </script>

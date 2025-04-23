@@ -1,0 +1,573 @@
+<!-- YGO Card Embed Script v2.0 for DropInBlog -->
+<script>
+// == YGO Embed and Decklist Script v2.0 ==
+// Added localStorage persistence for card cache
+
+document.addEventListener('DOMContentLoaded', async function () {
+    console.log("✅ YGO embed script v2.0 loaded");
+  
+    // --- CSS Injection ---
+    const style = document.createElement('style');
+    style.textContent = `
+      .ygo-embed-container {
+        display: flex;
+        gap: 16px;
+        align-items: center;
+        flex-direction: row;
+        background-color: #394042;
+        border-radius: 8px;
+        padding: 16px;
+        margin: 16px 0;
+        border: 2px solid #5c696d;
+        color: #ffffff;
+      }
+  
+      @media (max-width: 600px) {
+        .ygo-embed-container {
+          flex-direction: column;
+          align-items: center;
+        }
+      }
+  
+      .ygo-card-image-container {
+        flex: 0 0 auto;
+        text-align: center;
+      }
+  
+      .ygo-card-image {
+        width: 250px;
+        height: 364px;
+        object-fit: cover;
+        cursor: zoom-in;
+        border: none;
+        display: block;
+        margin: 0 auto;
+      }
+  
+      .ygo-card-details {
+        font-family: Arial, sans-serif;
+        line-height: 1.5;
+        color: #ffffff;
+        flex: 1;
+      }
+  
+      .ygo-card-name {
+        margin: 0 0 8px;
+        font-size: 1.2em;
+        color: #ffffff;
+      }
+  
+      .ygo-card-type-line,
+      .ygo-card-oracle-text,
+      .ygo-card-price {
+        margin: 4px 0;
+        color: #ffffff;
+      }
+  
+      .ygo-card-price {
+        font-size: 0.9em;
+      }
+  
+      .hover-card {
+        color: #d8232f;
+        font-weight: bold;
+        cursor: pointer;
+        text-decoration: none;
+      }
+  
+      .hover-card:hover {
+        opacity: 0.8;
+      }
+  
+      .ygo-decklist-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+        gap: 8px;
+        margin: 12px 0;
+        padding: 0;
+      }
+  
+      .ygo-decklist-card {
+        text-align: center;
+        font-size: 0.8em;
+        line-height: 1.3;
+      }
+  
+      .ygo-decklist-card img {
+        width: 100%;
+        max-width: 120px;
+        height: auto;
+        border-radius: 2px !important;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        margin-bottom: 4px;
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+        cursor: zoom-in;
+      }
+  
+      .ygo-decklist-card .card-qty {
+        display: block;
+        margin-top: 2px;
+        font-weight: bold;
+        color: #fff;
+      }
+  
+      .ygo-decklist-card a {
+        color: #fff;
+        text-decoration: none;
+        font-weight: bold;
+        display: block;
+        margin-top: 4px;
+        cursor: pointer;
+      }
+    `;
+    document.head.appendChild(style);
+  
+    // --- Improved Caching with localStorage ---
+    const CACHE_VERSION = 'ygo-cache-v1'; // For cache invalidation when needed
+    const CACHE_EXPIRY = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
+    
+    // Initialize card cache from localStorage
+    const cardCache = initializeCardCache();
+    
+    function initializeCardCache() {
+      try {
+        const cachedData = localStorage.getItem(CACHE_VERSION);
+        
+        if (cachedData) {
+          const parsedCache = JSON.parse(cachedData);
+          
+          // Check if cache is still valid (not expired)
+          if (parsedCache.timestamp && Date.now() - parsedCache.timestamp < CACHE_EXPIRY) {
+            console.log(`✅ Loaded ${Object.keys(parsedCache.cards).length} cached cards from localStorage`);
+            return parsedCache.cards;
+          } else {
+            console.log("⚠️ Card cache expired, creating new cache");
+          }
+        }
+      } catch (err) {
+        console.warn("⚠️ Error loading card cache from localStorage", err);
+      }
+      
+      return {}; // Return empty cache if not found or error
+    }
+    
+    // Save cache to localStorage
+    function saveCardCache() {
+      try {
+        const cacheData = {
+          timestamp: Date.now(),
+          cards: cardCache
+        };
+        
+        localStorage.setItem(CACHE_VERSION, JSON.stringify(cacheData));
+        console.log(`✅ Saved ${Object.keys(cardCache).length} cards to cache`);
+      } catch (err) {
+        console.warn("⚠️ Error saving card cache to localStorage", err);
+        
+        // If quota exceeded, clear older entries
+        if (err.name === 'QuotaExceededError' || err.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
+          try {
+            // Keep only the most recently used cards (half of the current cache)
+            const keys = Object.keys(cardCache);
+            const keysToRemove = keys.slice(0, Math.floor(keys.length / 2));
+            
+            keysToRemove.forEach(key => delete cardCache[key]);
+            
+            // Try saving again with reduced cache
+            localStorage.setItem(CACHE_VERSION, JSON.stringify({
+              timestamp: Date.now(),
+              cards: cardCache
+            }));
+            
+            console.log("✅ Reduced cache size and saved successfully");
+          } catch (e) {
+            console.error("❌ Failed to save even with reduced cache", e);
+          }
+        }
+      }
+    }
+    
+    // Periodically save cache to localStorage
+    const saveInterval = 60000; // Save every minute
+    const saveIntervalId = setInterval(saveCardCache, saveInterval);
+    
+    // Save cache before page unload
+    window.addEventListener('beforeunload', saveCardCache);
+  
+    const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+    let lastTapped = null;
+  
+    const hoverDiv = document.createElement('div');
+    hoverDiv.style.position = 'fixed';
+    hoverDiv.style.zIndex = '1000';
+    hoverDiv.style.display = 'none';
+    hoverDiv.style.pointerEvents = 'none';
+    hoverDiv.style.transition = 'opacity 0.3s ease';
+    document.body.appendChild(hoverDiv);
+  
+    // Process embeds and decklists
+    processEmbeds();
+    setupHoverPreviews();
+  
+    // Debounced scroll handler for reprocessing cards
+    let scrollTimeout;
+    window.addEventListener('scroll', function() {
+      if (scrollTimeout) {
+        clearTimeout(scrollTimeout);
+      }
+      scrollTimeout = setTimeout(function() {
+        processEmbeds();
+      }, 200);
+    });
+  
+    async function fetchCard(name) {
+      if (!name) return null;
+  
+      // Clean up the name for better matching
+      const cleanName = name.trim().toLowerCase();
+  
+      // Check cache first
+      if (cardCache[cleanName]) {
+        console.log(`✅ Card found in cache: ${name}`);
+        return cardCache[cleanName];
+      }
+  
+      console.log(`⏳ Fetching card: ${name}`);
+      
+      try {
+        const url = `https://db.ygoprodeck.com/api/v7/cardinfo.php?name=${encodeURIComponent(name)}`;
+        const response = await fetch(url);
+        
+        if (!response.ok) {
+          throw new Error(`API call failed with status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data && data.data && data.data.length > 0) {
+          const cardData = data.data[0];
+          
+          // Save to cache
+          cardCache[cleanName] = cardData;
+          
+          return cardData;
+        } else {
+          console.error(`❌ Card not found: ${name}`);
+          return null;
+        }
+      } catch (error) {
+        console.error(`❌ Error fetching card: ${name}`, error);
+        return null;
+      }
+    }
+    
+    function setupHoverPreviews() {
+      const dib = document.querySelector('.dib-posts') || document.querySelector('.dib-post-content');
+      
+      if (!dib) return;
+      
+      // Regex to find double-bracketed card names [[Card Name]]
+      const cardRegex = /\[\[(.*?)\]\]/g;
+      
+      // Process text nodes recursively
+      function processNode(node) {
+        if (node.nodeType === Node.TEXT_NODE) {
+          const text = node.textContent;
+          if (text.match(cardRegex)) {
+            const fragment = document.createDocumentFragment();
+            let lastIndex = 0;
+            let match;
+            
+            while ((match = cardRegex.exec(text)) !== null) {
+              // Add text before match
+              fragment.appendChild(document.createTextNode(text.substring(lastIndex, match.index)));
+              
+              // Create link for card
+              const cardName = match[1].trim();
+              const cardLink = document.createElement('a');
+              cardLink.textContent = cardName;
+              cardLink.className = 'hover-card';
+              cardLink.setAttribute('data-card-name', cardName);
+              
+              if (isMobile) {
+                cardLink.addEventListener('click', (e) => {
+                  e.preventDefault();
+                  loadHover(cardName, e);
+                });
+              } else {
+                cardLink.addEventListener('mouseover', (e) => loadHover(cardName, e));
+                cardLink.addEventListener('mousemove', positionHover);
+                cardLink.addEventListener('mouseout', () => {
+                  hoverDiv.style.display = 'none';
+                });
+              }
+              
+              fragment.appendChild(cardLink);
+              lastIndex = match.index + match[0].length;
+            }
+            
+            // Add remaining text
+            if (lastIndex < text.length) {
+              fragment.appendChild(document.createTextNode(text.substring(lastIndex)));
+            }
+            
+            // Replace original node with our fragment
+            node.parentNode.replaceChild(fragment, node);
+            return true;
+          }
+        } else if (node.nodeType === Node.ELEMENT_NODE && !node.classList.contains('hover-card')) {
+          // Skip elements that are already processed or should be ignored
+          if (node.nodeName === 'SCRIPT' || node.nodeName === 'STYLE' || node.classList.contains('ygo-embed-container')) {
+            return false;
+          }
+          
+          // Process child nodes (make a copy of the list to avoid live collection issues)
+          const childNodes = Array.from(node.childNodes);
+          let modified = false;
+          
+          for (const child of childNodes) {
+            if (processNode(child)) {
+              modified = true;
+            }
+          }
+          
+          return modified;
+        }
+        
+        return false;
+      }
+      
+      processNode(dib);
+    }
+    
+    async function loadHover(name, e) {
+      try {
+        const cardData = await fetchCard(name);
+        
+        if (cardData && cardData.card_images && cardData.card_images.length > 0) {
+          const imageUrl = cardData.card_images[0].image_url;
+          showHover(imageUrl);
+          positionHover(e);
+        }
+      } catch (err) {
+        console.error('Error loading hover image', err);
+      }
+    }
+    
+    function showHover(url) {
+      hoverDiv.innerHTML = `<img src="${url}" style="width: 280px; height: auto; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.5);">`;
+      hoverDiv.style.display = 'block';
+    }
+    
+    function positionHover(e) {
+      if (!hoverDiv || hoverDiv.style.display === 'none') return;
+      
+      const width = hoverDiv.offsetWidth || 280;
+      const height = hoverDiv.offsetHeight || 408;
+      
+      let left = e.clientX + 15;
+      let top = e.clientY + 15;
+      
+      // Adjust if would go off right edge
+      if (left + width > window.innerWidth) {
+        left = e.clientX - width - 15;
+      }
+      
+      // Adjust if would go off bottom edge
+      if (top + height > window.innerHeight) {
+        top = window.innerHeight - height - 15;
+      }
+      
+      // Ensure not off top or left
+      if (top < 15) top = 15;
+      if (left < 15) left = 15;
+      
+      hoverDiv.style.left = `${left}px`;
+      hoverDiv.style.top = `${top}px`;
+    }
+    
+    function processEmbeds() {
+      const paragraphs = document.querySelectorAll('p');
+      
+      paragraphs.forEach(async (p) => {
+        const text = p.textContent.trim();
+        
+        // Skip if already processed
+        if (p.hasAttribute('data-processed')) return;
+        
+        // Process individual card embeds
+        if (text.startsWith('embed::')) {
+          const cardName = text.substring(7).trim();
+          p.setAttribute('data-processed', 'true');
+          p.style.display = 'none';
+          
+          const container = document.createElement('div');
+          container.className = 'ygo-embed-container';
+          container.innerHTML = '<div class="loading">Loading card...</div>';
+          p.parentNode.insertBefore(container, p.nextSibling);
+          
+          try {
+            const cardData = await fetchCard(cardName);
+            
+            if (cardData) {
+              renderCardEmbed(container, cardData);
+            } else {
+              container.innerHTML = `<div class="error">Card not found: ${cardName}</div>`;
+            }
+          } catch (err) {
+            console.error(`Error embedding card: ${cardName}`, err);
+            container.innerHTML = `<div class="error">Error loading card: ${cardName}</div>`;
+          }
+        }
+        // Process deck lists (main, extra, side decks)
+        else if (text.startsWith('deck::')) {
+          p.setAttribute('data-processed', 'true');
+          const parts = text.split('::');
+          
+          if (parts.length >= 3) {
+            const deckType = parts[1].trim().toLowerCase();
+            let cardListText = parts.slice(2).join('::').trim();
+            
+            // Make sure we're parsing a valid JSON array
+            if (!cardListText.startsWith('[')) {
+              console.error('Invalid deck list format, expected JSON array:', cardListText);
+              return;
+            }
+            
+            try {
+              const cardList = JSON.parse(cardListText);
+              renderDeckSection(p, deckType, cardList);
+            } catch (err) {
+              console.error(`Error parsing deck list: ${cardListText}`, err);
+            }
+          }
+        }
+      });
+    }
+    
+    function renderCardEmbed(container, cardData) {
+      // Get image from first card image if available
+      const imageUrl = cardData.card_images && cardData.card_images.length > 0 
+        ? cardData.card_images[0].image_url 
+        : '';
+      
+      // Format card type and other details
+      const cardType = [
+        cardData.type || '',
+        cardData.race ? `${cardData.race}/` : '',
+        cardData.attribute ? `${cardData.attribute}/` : ''
+      ].join(' ').trim();
+      
+      // For monsters, show ATK/DEF, for other cards show type
+      const statsLine = cardData.type && cardData.type.includes('Monster')
+        ? `ATK: ${cardData.atk} / DEF: ${cardData.def} / Level: ${cardData.level}`
+        : cardType;
+      
+      // Construct card price if available
+      let priceHTML = '';
+      if (cardData.card_prices && cardData.card_prices.length > 0) {
+        const prices = cardData.card_prices[0];
+        priceHTML = `
+          <div class="ygo-card-price">
+            <strong>TCGPlayer:</strong> $${Number(prices.tcgplayer_price).toFixed(2)} | 
+            <strong>Cardmarket:</strong> €${Number(prices.cardmarket_price).toFixed(2)}
+          </div>
+        `;
+      }
+      
+      // Build HTML
+      container.innerHTML = `
+        <div class="ygo-card-image-container">
+          <img class="ygo-card-image" src="${imageUrl}" alt="${cardData.name}" 
+               onclick="window.open(this.src, '_blank')">
+        </div>
+        <div class="ygo-card-details">
+          <h3 class="ygo-card-name">${cardData.name}</h3>
+          <div class="ygo-card-type-line">${statsLine}</div>
+          <div class="ygo-card-oracle-text">${cardData.desc.replace(/\n/g, '<br>')}</div>
+          ${priceHTML}
+        </div>
+      `;
+    }
+    
+    function renderDeckSection(p, deckType, cardList) {
+      if (!cardList || !Array.isArray(cardList) || cardList.length === 0) {
+        console.error('Invalid or empty card list for deck section:', deckType);
+        return;
+      }
+      
+      p.style.display = 'none';
+      
+      // Create container
+      const container = document.createElement('div');
+      container.className = 'ygo-deck-section';
+      p.parentNode.insertBefore(container, p.nextSibling);
+      
+      // Add header (except for upgrade section)
+      if (deckType !== 'upgrade') {
+        const header = document.createElement('h3');
+        header.textContent = {
+          'main': 'Main Deck',
+          'extra': 'Extra Deck',
+          'side': 'Side Deck'
+        }[deckType] || deckType.charAt(0).toUpperCase() + deckType.slice(1);
+        
+        container.appendChild(header);
+      }
+      
+      // Create grid for cards
+      const grid = document.createElement('div');
+      grid.className = 'ygo-decklist-grid';
+      container.appendChild(grid);
+      
+      // Process each card
+      const cardPromises = cardList.map(async (item) => {
+        // Extract quantity if format is "Card Name x2"
+        const qtyMatch = item.match(/(.+?)\s*x\s*(\d+)$/);
+        const cardName = qtyMatch ? qtyMatch[1].trim() : item.trim();
+        const quantity = qtyMatch ? parseInt(qtyMatch[2]) : 1;
+        
+        try {
+          const cardData = await fetchCard(cardName);
+          
+          if (cardData && cardData.card_images && cardData.card_images.length > 0) {
+            const cardElement = document.createElement('div');
+            cardElement.className = 'ygo-decklist-card';
+            
+            const imageUrl = cardData.card_images[0].image_url;
+            
+            cardElement.innerHTML = `
+              <img src="${imageUrl}" alt="${cardData.name}" 
+                   onclick="window.open('${imageUrl}', '_blank')">
+              <span class="card-qty">${quantity > 1 ? 'x' + quantity : ''}</span>
+              <a class="hover-card" data-card-name="${cardData.name}">${cardData.name}</a>
+            `;
+            
+            grid.appendChild(cardElement);
+          } else {
+            console.error(`Card not found in deck: ${cardName}`);
+            
+            // Add placeholder for failed card
+            const placeholderElement = document.createElement('div');
+            placeholderElement.className = 'ygo-decklist-card ygo-decklist-error';
+            placeholderElement.innerHTML = `
+              <div class="missing-card">${cardName}</div>
+              <span class="card-qty">${quantity > 1 ? 'x' + quantity : ''}</span>
+            `;
+            
+            grid.appendChild(placeholderElement);
+          }
+        } catch (err) {
+          console.error(`Error loading deck card: ${cardName}`, err);
+        }
+      });
+      
+      // Process all cards in batch
+      Promise.all(cardPromises).then(() => {
+        console.log(`✅ Deck section ${deckType} loaded`);
+      });
+    }
+});
+</script> 
