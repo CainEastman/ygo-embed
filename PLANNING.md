@@ -81,6 +81,13 @@ The codebase is organized into modules following the single responsibility princ
     - Centralizes configuration values
     - Improves maintainability
 
+### Code File Guidelines
+- Each module should maintain a single responsibility
+- All code files should be 500 lines or less for maintainability
+- When a module approaches the line limit, consider further decomposition
+- Consistent use of constants across modules
+- Standardized error handling and logging approaches
+
 ### Component Flow
 1. Main module initializes and loads other modules
 2. Parse page for card references on load
