@@ -1,0 +1,49 @@
+/* YGO Card Embed Styles (Fixed) */
+
+.ygo-card-link {
+  display: inline-block;
+  position: relative;
+  margin: 0 5px;
+  transition: transform 0.2s ease;
+  vertical-align: middle;
+  z-index: 10;
+}
+
+.ygo-card-link:hover {
+  transform: scale(1.5);
+  z-index: 20;
+}
+
+.ygo-card-image {
+  width: 75px;
+  height: auto;
+  border-radius: 3px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+}
+
+/* Responsive adjustments */
+@media screen and (max-width: 768px) {
+  .ygo-card-image {
+    width: 60px;
+  }
+  
+  .ygo-card-link:hover {
+    transform: scale(1.3);
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .ygo-card-image {
+    width: 45px;
+  }
+  
+  .ygo-card-link:hover {
+    transform: scale(1.2);
+  }
+}
+
+/* Card reference styling */
+p a.ygo-card-link {
+  text-decoration: none !important;
+  border-bottom: none !important;
+} 
