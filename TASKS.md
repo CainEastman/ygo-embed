@@ -30,6 +30,8 @@
   - [x] Restructure into modular components
   - [x] Use ES modules for better maintainability
   - [x] Extract reusable functions into dedicated modules
+  - [ ] Standardize the use of constants across all modules
+  - [ ] Consolidate duplicate event listeners for page unload
 
 ## Features to Add
 
