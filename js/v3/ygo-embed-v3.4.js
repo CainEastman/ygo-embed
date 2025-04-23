@@ -121,12 +121,14 @@
         setTimeout(() => this.processQueue(), 50);
       },
       async fetchCardBatch(cardNames) {
-        const uniqueNames = [...new Set(cardNames.map((name) => name.trim()))];
+        const uniqueNames = [...new Set(cardNames.map(name => name.trim()))];
         if (uniqueNames.length === 0) return [];
+        
         try {
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), API.TIMEOUT);
           let response;
+          
           if (uniqueNames.length === 1) {
             response = await fetch(
               `${API.BASE_URL}/cardinfo.php?name=${encodeURIComponent(uniqueNames[0])}`,
@@ -134,34 +136,59 @@
             );
           } else {
             const params = new URLSearchParams();
-            uniqueNames.forEach((name) => params.append("fname", name));
+            uniqueNames.forEach(name => params.append('name', name));
             response = await fetch(`${API.BASE_URL}/cardinfo.php?${params.toString()}`, {
-              method: "GET",
+              method: 'GET',
               signal: controller.signal
             });
           }
+          
           clearTimeout(timeoutId);
+          
           if (!response.ok) {
             throw new Error(`API responded with status ${response.status}`);
           }
+          
           const data = await response.json();
+          
           if (!data.data || data.data.length === 0) {
             throw new Error("No card data found");
           }
-          data.data.forEach((card) => {
+          
+          data.data.forEach(card => {
             addCardToCache(cardCache, card);
           });
+          
           const missingCards = uniqueNames.filter(
-            (name) => !Object.keys(cardCache).some(
-              (key) => key.toLowerCase() === name.toLowerCase()
+            name => !Object.keys(cardCache).some(
+              key => key.toLowerCase() === name.toLowerCase()
             )
           );
+          
           if (missingCards.length > 0) {
-            console.warn(`\u26A0\uFE0F Some cards were not found in the API: ${missingCards.join(", ")}`);
+            console.warn(`⚠️ Some cards were not found in the API: ${missingCards.join(", ")}`);
+            // Try fetching missing cards individually
+            for (const name of missingCards) {
+              try {
+                const singleResponse = await fetch(
+                  `${API.BASE_URL}/cardinfo.php?name=${encodeURIComponent(name)}`,
+                  { signal: controller.signal }
+                );
+                if (singleResponse.ok) {
+                  const singleData = await singleResponse.json();
+                  if (singleData.data && singleData.data.length > 0) {
+                    addCardToCache(cardCache, singleData.data[0]);
+                  }
+                }
+              } catch (err) {
+                console.error(`Failed to fetch individual card: ${name}`, err);
+              }
+            }
           }
+          
           return data.data;
         } catch (err) {
-          console.error(`\u274C Batch fetch error for cards: ${uniqueNames.join(", ")}`, err);
+          console.error(`❌ Batch fetch error for cards: ${uniqueNames.join(", ")}`, err);
           throw err;
         }
       }
