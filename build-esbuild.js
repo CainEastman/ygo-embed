@@ -1,13 +1,26 @@
 const esbuild = require('esbuild');
 const path = require('path');
+const fs = require('fs');
 
 // Create dist directory if it doesn't exist
-const fs = require('fs');
 if (!fs.existsSync('dist')) {
   fs.mkdirSync('dist');
 }
 
 console.log('Starting build process...');
+
+// Read the CSS file
+const cssContent = fs.readFileSync(path.join(__dirname, 'js/v3/modules/styles.css'), 'utf8');
+
+// Create a temporary JS file that exports the CSS
+const tempJsContent = `
+// Generated CSS module
+const styles = \`${cssContent}\`;
+export default styles;
+`;
+
+const tempJsPath = path.join(__dirname, 'js/v3/modules/styles-generated.js');
+fs.writeFileSync(tempJsPath, tempJsContent);
 
 // Build minified version
 esbuild.build({
@@ -15,11 +28,8 @@ esbuild.build({
   bundle: true,
   minify: true,
   sourcemap: true,
-  format: 'iife', // Immediately Invoked Function Expression for browser compatibility
+  format: 'iife',
   outfile: path.join(__dirname, 'dist/ygo-embed-v3-bundled.min.js'),
-  loader: {
-    '.js': 'jsx' // Handle any JSX if needed
-  }
 }).then(() => {
   console.log('✅ Minified build completed successfully!');
   
@@ -31,9 +41,6 @@ esbuild.build({
     sourcemap: true,
     format: 'iife',
     outfile: path.join(__dirname, 'dist/ygo-embed-v3-bundled.js'),
-    loader: {
-      '.js': 'jsx'
-    }
   });
 }).then(() => {
   console.log('✅ Non-minified build completed successfully!');
@@ -46,11 +53,18 @@ esbuild.build({
     console.log(`📊 File sizes:
     - Minified: ${(minSize / 1024).toFixed(2)} KB
     - Non-minified: ${(fullSize / 1024).toFixed(2)} KB`);
+
+    // Clean up temporary file
+    fs.unlinkSync(tempJsPath);
   } catch (error) {
     console.error('Error getting file sizes:', error);
   }
   
 }).catch((err) => {
   console.error('❌ Build failed:', err);
+  // Clean up temporary file even if build fails
+  if (fs.existsSync(tempJsPath)) {
+    fs.unlinkSync(tempJsPath);
+  }
   process.exit(1);
 }); 
