@@ -20,7 +20,32 @@ This guide explains how to integrate the YGO Embed script with your DropInBlog-p
 
 Copy one of the code snippets below and paste it into the editor:
 
-#### Option A: Standard Version (Recommended for most users)
+#### Option A: Bundled Version (Recommended for most users)
+
+```html
+<!-- YGO Card & Decklist Embed Snippet -->
+
+<!-- CSS Styles -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/CainEastman/ygo-embed@main/ygo-embed-v3.css">
+
+<!-- Bundled Script Version -->
+<script>
+    // Load YGO Embed Script
+    document.addEventListener('DOMContentLoaded', function() {
+        // Create script element
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/gh/CainEastman/ygo-embed@main/dist/ygo-embed-v3.min.js';
+        script.defer = true;
+        
+        // Append to document head
+        document.head.appendChild(script);
+        
+        console.log('YGO Embed script loaded via DropInBlog Smart Snippet');
+    });
+</script>
+```
+
+#### Option B: Standard Version (Legacy)
 
 ```html
 <!-- YGO Card & Decklist Embed Snippet -->
@@ -45,7 +70,7 @@ Copy one of the code snippets below and paste it into the editor:
 </script>
 ```
 
-#### Option B: ES Module Version (For advanced users)
+#### Option C: ES Module Version (For advanced users)
 
 ```html
 <!-- YGO Card & Decklist Embed Snippet (Modular Version) -->
@@ -56,7 +81,7 @@ Copy one of the code snippets below and paste it into the editor:
 <!-- ES Module Version -->
 <script type="module">
     // Import directly from the GitHub repository via jsDelivr
-    import 'https://cdn.jsdelivr.net/gh/CainEastman/ygo-embed@main/js/ygo-embed-v3.js';
+    import 'https://cdn.jsdelivr.net/gh/CainEastman/ygo-embed@main/js/v3/ygo-embed-v3-modular.js';
     
     console.log('YGO Embed modular script loaded via DropInBlog Smart Snippet');
 </script>

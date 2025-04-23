@@ -140,6 +140,13 @@ The codebase is organized into modules following the single responsibility princ
 - Version reflected in cache keys for proper invalidation
 - Current version: v3.1
 
+### Build Process
+- Use esbuild for bundling modules into distributable files
+- Build both minified and non-minified versions
+- Include source maps for debugging
+- Maintain both modular version (for development) and bundled version (for distribution)
+- Build scripts: build.bat (Windows) and build-esbuild.js (Node.js)
+
 ### Testing Strategy
 - Manual testing across browsers
 - Sample pages for each feature

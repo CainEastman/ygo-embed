@@ -73,6 +73,51 @@ To create hover previews in content, wrap card names in double brackets:
 
 The script automatically initializes when the page loads.
 
+## Building from Source
+
+This project uses esbuild to bundle the modular JavaScript files into a single distributable file.
+
+### Prerequisites
+- Node.js (14.x or higher recommended)
+- npm or yarn
+
+### Setup
+1. Clone the repository:
+   ```
+   git clone https://github.com/CainEastman/ygo-embed.git
+   cd ygo-embed
+   ```
+
+2. Install dependencies:
+   ```
+   npm install
+   ```
+
+### Building
+There are two ways to build the project:
+
+#### Option 1: Using the batch file (Windows)
+Simply run the batch file:
+```
+.\build.bat
+```
+
+#### Option 2: Using the Node.js script
+Run the build script:
+```
+node build-esbuild.js
+```
+
+Both methods will generate two versions in the `dist` directory:
+- `ygo-embed-v3.min.js`: Minified version for production use
+- `ygo-embed-v3.js`: Non-minified version for development/debugging
+
+### Manual Build Command
+If you prefer to run esbuild directly:
+```
+npx esbuild js/v3/ygo-embed-v3-modular.js --bundle --minify --sourcemap --format=iife --outfile=dist/ygo-embed-v3.min.js
+```
+
 ## Module Structure
 
 The modular version is organized into the following modules:
