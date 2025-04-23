@@ -410,21 +410,17 @@
 
   // js/v3/modules/decklistRenderer.js
   function renderDecklists(context) {
-    const { fetchCards: fetchCards2 } = context;
+    const { fetchCards } = context;
     document.querySelectorAll(".ygo-decklist").forEach(async (section) => {
-      const titleMap = {
-        main: "Main Deck",
-        extra: "Extra Deck",
-        side: "Side Deck",
-        upgrade: null
-      };
       const deckType = section.getAttribute("data-deck-section");
-      const names = JSON.parse(section.getAttribute("data-card-names"));
+      const cardNames = JSON.parse(section.getAttribute("data-card-names"));
+      
       try {
-        await renderDeckSection(section, names, deckType, titleMap, fetchCards2);
+        const cards = await fetchCards(cardNames);
+        await renderDeckSection(section, deckType, cardNames, cards);
       } catch (err) {
         console.error("Error loading decklist:", err);
-        section.innerHTML = `<div class="ygo-error">\u274C Error loading decklist: ${err.message}</div>`;
+        section.innerHTML = `<div class="ygo-error">❌ Error loading decklist: ${err.message}</div>`;
       }
     });
   }
@@ -461,9 +457,12 @@
   }
   async function renderDeckSection(container, section, cardList, availableCards) {
     try {
+      // Ensure section is a string and has a valid value
+      const sectionName = String(section || 'main').toLowerCase();
+      
       const sectionEl = document.createElement('div');
-      sectionEl.className = `ygo-deck-section ygo-deck-${section.toLowerCase()}`;
-      sectionEl.innerHTML = `<h3>${section.toUpperCase()} DECK</h3>`;
+      sectionEl.className = `ygo-deck-section ygo-deck-${sectionName}`;
+      sectionEl.innerHTML = `<h3>${sectionName.toUpperCase()} DECK</h3>`;
 
       const processedCards = cardList.map(entry => {
         try {
@@ -528,7 +527,7 @@
           convertDeckList(p, deckMatch[1], deckMatch[2]);
         } catch (err) {
           console.error("Error parsing deck list:", err);
-          p.innerHTML = `<div class="ygo-error">\u274C Error parsing deck list: ${err.message}</div>`;
+          p.innerHTML = `<div class="ygo-error">❌ Error parsing deck list: ${err.message}</div>`;
         }
         return;
       }
@@ -538,7 +537,7 @@
           convertCardEmbed(p, embedMatch[1]);
         } catch (err) {
           console.error("Error parsing card embed:", err);
-          p.innerHTML = `<div class="ygo-error">\u274C Error parsing card embed: ${err.message}</div>`;
+          p.innerHTML = `<div class="ygo-error">❌ Error parsing card embed: ${err.message}</div>`;
         }
       }
     });
@@ -546,18 +545,32 @@
   function convertDeckList(p, section, cardList) {
     let cards;
     try {
-      cards = JSON.parse(cardList);
-    } catch (e) {
-      cards = cardList.split(",").map((entry) => entry.trim()).filter((entry) => entry.length > 0);
+      // First try parsing as JSON
+      try {
+        cards = JSON.parse(cardList);
+      } catch (e) {
+        // If JSON parsing fails, treat as comma-separated list
+        cards = cardList.split(",").map(entry => entry.trim())
+          .filter(entry => entry.length > 0)
+          .map(entry => {
+            // Remove quotes if present
+            return entry.replace(/^["'](.*)["']$/, '$1');
+          });
+      }
+
+      if (!Array.isArray(cards) || cards.length === 0) {
+        throw new Error("Invalid deck list format - must be JSON array or comma-separated list");
+      }
+
+      const container = document.createElement("div");
+      container.className = "ygo-decklist";
+      container.setAttribute("data-deck-section", section);
+      container.setAttribute("data-card-names", JSON.stringify(cards));
+      p.parentNode.replaceChild(container, p);
+    } catch (err) {
+      console.error("Error parsing deck list:", err);
+      p.innerHTML = `<div class="ygo-error">❌ Error parsing deck list: ${err.message}</div>`;
     }
-    if (!Array.isArray(cards) || cards.length === 0) {
-      throw new Error("Invalid deck list format - must be JSON array or comma-separated list");
-    }
-    const container = document.createElement("div");
-    container.className = "ygo-decklist";
-    container.setAttribute("data-deck-section", section);
-    container.setAttribute("data-card-names", JSON.stringify(cards));
-    p.parentNode.replaceChild(container, p);
   }
   function convertCardEmbed(p, cardName) {
     if (!cardName || cardName.trim().length === 0) {
