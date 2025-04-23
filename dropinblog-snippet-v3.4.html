@@ -1,0 +1,32 @@
+<!-- YGO Card & Decklist Embed Snippet v3.4 -->
+<script>
+    // Load YGO Embed Script
+    document.addEventListener('DOMContentLoaded', function() {
+        // Create script element
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/gh/CainEastman/ygo-embed@main/dist/ygo-embed-v3.4.min.js';
+        script.defer = true;
+        
+        // Add error handling
+        script.onerror = function() {
+            console.error('Failed to load YGO embed script');
+            console.error('Attempted URL: ' + script.src);
+            
+            // Try loading from backup URL if primary fails
+            const backupScript = document.createElement('script');
+            backupScript.src = 'https://cdn.jsdelivr.net/gh/CainEastman/ygo-embed@main/js/v3/ygo-embed-v3.4.js';
+            backupScript.defer = true;
+            document.head.appendChild(backupScript);
+        };
+        
+        // Log success when loaded
+        script.onload = function() {
+            console.log('✅ YGO embed script v3.4 successfully loaded');
+        };
+        
+        // Append to document head
+        document.head.appendChild(script);
+        
+        console.log('YGO embed script v3.4 loading...');
+    });
+</script> 

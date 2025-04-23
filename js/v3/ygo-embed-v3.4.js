@@ -683,29 +683,82 @@
     }
   }
 
-  // js/v3/ygo-embed-v3-modular.js
-  document.addEventListener("DOMContentLoaded", async function() {
-    console.log("\u2705 YGO embed script v3.0 loaded");
-    loadStyles();
-    const cardCache = initCache();
-    const requestQueue = setupRequestQueue(cardCache);
-    const context = {
-      cardCache,
-      requestQueue,
-      fetchCard: (name) => fetchCard(name, cardCache, requestQueue),
-      fetchCards: (names) => fetchCards(names, cardCache, requestQueue)
-    };
-    const saveInterval = 6e4;
-    const saveIntervalId = setInterval(() => saveCardCache(cardCache), saveInterval);
-    window.addEventListener("beforeunload", () => saveCardCache(cardCache));
-    convertMarkup();
-    setupHoverPreviews(context);
-    renderCardEmbeds(context);
-    renderDecklists(context);
-    window.addEventListener("unload", () => {
-      clearInterval(saveIntervalId);
-      saveCardCache(cardCache);
+  // Wait for DropInBlog content to be ready
+  const waitForDropInBlog = () => {
+    return new Promise((resolve) => {
+      const check = () => {
+        const dibContent = document.querySelector('.dib-post-content');
+        if (dibContent) {
+          console.log('✅ DropInBlog content ready');
+          resolve();
+        } else {
+          setTimeout(check, 100);
+        }
+      };
+      check();
     });
-  });
+  };
+
+  // Main initialization function
+  const init = async () => {
+    try {
+      // Wait for DropInBlog content
+      await waitForDropInBlog();
+      
+      // Initialize cache and request queue
+      const cardCache = initCache();
+      const requestQueue = setupRequestQueue(cardCache);
+      
+      // Setup context for all modules
+      const context = {
+        cardCache,
+        requestQueue,
+        fetchCard: (name) => fetchCard(name, cardCache, requestQueue),
+        fetchCards: (names) => fetchCards(names, cardCache, requestQueue)
+      };
+      
+      // Load styles
+      loadStyles();
+      
+      // Setup periodic cache saving
+      const saveInterval = CACHE.SAVE_INTERVAL;
+      const saveIntervalId = setInterval(() => saveCardCache(cardCache), saveInterval);
+      
+      // Save cache before page unload
+      window.addEventListener('beforeunload', () => saveCardCache(cardCache));
+      
+      // Convert markup in DropInBlog content
+      const dibContent = document.querySelector('.dib-post-content');
+      if (dibContent) {
+        convertMarkup(dibContent);
+      }
+      
+      // Setup hover previews
+      setupHoverPreviews(context);
+      
+      // Render card embeds
+      renderCardEmbeds(context);
+      
+      // Render decklists
+      renderDecklists(context);
+      
+      // Save cache on page unload
+      window.addEventListener('unload', () => {
+        clearInterval(saveIntervalId);
+        saveCardCache(cardCache);
+      });
+      
+      console.log('✅ YGO embed script v3.4 initialized successfully');
+    } catch (error) {
+      console.error('❌ Error initializing YGO embed script:', error);
+    }
+  };
+
+  // Start initialization when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
 })();
 //# sourceMappingURL=ygo-embed-v3.4.js.map
