@@ -3,7 +3,7 @@
 // Main entry point - loads all modules
 
 // Import modules
-import { initCache, saveCardCache, getCardCache } from './modules/cache.js';
+import { initCache, saveCardCache, getCardFromCache } from './modules/cache.js';
 import { setupRequestQueue } from './modules/api.js';
 import { fetchCard, fetchCards } from './modules/cardFetcher.js';
 import { setupHoverPreviews } from './modules/hoverPreview.js';
