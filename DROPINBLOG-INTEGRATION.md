@@ -26,7 +26,7 @@ Copy one of the code snippets below and paste it into the editor:
 <!-- YGO Card & Decklist Embed Snippet -->
 
 <!-- CSS Styles -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/CainEastman/ygo-embed@main/ygo-embed-v3.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/CainEastman/ygo-embed@main/js/v3/ygo-embed-v3.css">
 
 <!-- Bundled Script Version -->
 <script>
@@ -51,7 +51,7 @@ Copy one of the code snippets below and paste it into the editor:
 <!-- YGO Card & Decklist Embed Snippet -->
 
 <!-- CSS Styles -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/CainEastman/ygo-embed@main/ygo-embed-v3.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/CainEastman/ygo-embed@main/js/v3/ygo-embed-v3.css">
 
 <!-- Standard Script Version -->
 <script>
@@ -76,7 +76,7 @@ Copy one of the code snippets below and paste it into the editor:
 <!-- YGO Card & Decklist Embed Snippet (Modular Version) -->
 
 <!-- CSS Styles -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/CainEastman/ygo-embed@main/ygo-embed-v3.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/CainEastman/ygo-embed@main/js/v3/ygo-embed-v3.css">
 
 <!-- ES Module Version -->
 <script type="module">

@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         link.id = 'ygo-embed-styles';
         link.rel = 'stylesheet';
         link.type = 'text/css';
-        link.href = 'ygo-embed-v3.css';
+        link.href = 'js/v3/ygo-embed-v3.css';
         document.head.appendChild(link);
         console.log("✅ YGO embed styles loaded");
     }
