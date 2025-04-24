@@ -64,7 +64,7 @@
         key => key.toLowerCase() === searchName.toLowerCase()
     );
     if (cardName && cardCache[cardName].complete) {
-        return cardCache[cardName];
+      return cardCache[cardName];
     }
     
     return null;
@@ -72,10 +72,10 @@
   function addCardToCache(cardCache, card) {
     const cardName = card.name.trim();
     const cardData = {
-        ...card,
+      ...card,
         imgSmall: card.card_images?.[0]?.image_url_small,
         imgLarge: card.card_images?.[0]?.image_url,
-        complete: true
+      complete: true
     };
     
     // Add both the exact name and normalized name to cache
@@ -102,22 +102,22 @@
   // js/v3/modules/api.js
   function setupRequestQueue(cardCache) {
     const requestQueue = {
-        pending: [],
-        inProgress: false,
+      pending: [],
+      inProgress: false,
         async add(cardName, resolve, reject) {
-            this.pending.push({ cardName, resolve, reject });
-            if (!this.inProgress) {
+        this.pending.push({ cardName, resolve, reject });
+        if (!this.inProgress) {
                 await this.processQueue();
-            }
-        },
-        async processQueue() {
-            if (this.pending.length === 0) {
-                this.inProgress = false;
-                return;
-            }
+        }
+      },
+      async processQueue() {
+        if (this.pending.length === 0) {
+          this.inProgress = false;
+          return;
+        }
             
-            this.inProgress = true;
-            const batch = this.pending.splice(0, API.BATCH_SIZE);
+        this.inProgress = true;
+        const batch = this.pending.splice(0, API.BATCH_SIZE);
             const cardNames = batch.map(item => item.cardName);
             
             try {
@@ -128,20 +128,20 @@
                 cards.forEach(card => addCardToCache(cardCache, card));
                 
                 // Resolve promises
-                for (const item of batch) {
+          for (const item of batch) {
                     const card = getCardFromCache(cardCache, item.cardName);
                     if (card) {
                         item.resolve(card);
-                    } else {
-                        item.reject(new Error(`Failed to load card: ${item.cardName}`));
-                    }
-                }
-            } catch (error) {
-                console.error('Batch processing error:', error);
-                for (const item of batch) {
-                    item.reject(error);
-                }
+            } else {
+              item.reject(new Error(`Failed to load card: ${item.cardName}`));
             }
+          }
+        } catch (error) {
+                console.error('Batch processing error:', error);
+          for (const item of batch) {
+            item.reject(error);
+          }
+        }
             
             // Process next batch
             setTimeout(() => this.processQueue(), 50);
@@ -176,10 +176,10 @@
     
     // If no quantity specified, return 1
     console.log(`No quantity found: "${entry}" -> name: "${entry}", quantity: 1`);
-    return { 
+      return {
         quantity: 1, 
         name: entry.trim() 
-    };
+      };
   }
   async function fetchCard(name, cardCache, requestQueue) {
     try {
@@ -208,16 +208,16 @@
     
     // Parse quantities and collect unique names
     cardNames.forEach(entry => {
-        try {
-            const { quantity, name } = parseQuantity(entry);
+      try {
+        const { quantity, name } = parseQuantity(entry);
             console.log(`Parsed entry: "${entry}" -> quantity: ${quantity}, name: "${name}"`);
-            uniqueNames.add(name);
-            quantities.set(name, (quantities.get(name) || 0) + quantity);
-        } catch (err) {
-            console.warn(`⚠️ Error parsing card entry: ${entry}`, err);
-            uniqueNames.add(entry.trim());
-            quantities.set(entry.trim(), 1);
-        }
+        uniqueNames.add(name);
+        quantities.set(name, (quantities.get(name) || 0) + quantity);
+      } catch (err) {
+        console.warn(`⚠️ Error parsing card entry: ${entry}`, err);
+        uniqueNames.add(entry.trim());
+        quantities.set(entry.trim(), 1);
+      }
     });
 
     console.log('Unique names:', [...uniqueNames]);
@@ -225,24 +225,24 @@
 
     // Filter out cards that are already in cache
     const uncachedNames = [...uniqueNames].filter(
-        name => !getCardFromCache(cardCache, name)
+      name => !getCardFromCache(cardCache, name)
     );
 
     console.log('Uncached names:', uncachedNames);
 
     // Fetch uncached cards
     if (uncachedNames.length > 0) {
-        const promises = uncachedNames.map(name =>
-            new Promise((resolve, reject) => {
-                requestQueue.add(name, resolve, reject);
-            })
-        );
+      const promises = uncachedNames.map(name =>
+        new Promise((resolve, reject) => {
+          requestQueue.add(name, resolve, reject);
+        })
+      );
 
-        try {
-            await Promise.all(promises);
-        } catch (err) {
-            console.error("❌ Error fetching cards:", err);
-        }
+      try {
+        await Promise.all(promises);
+      } catch (err) {
+        console.error("❌ Error fetching cards:", err);
+      }
     }
 
     // Return results with quantities
@@ -250,8 +250,8 @@
         const card = getCardFromCache(cardCache, name);
         console.log(`Result for "${name}":`, card);
         return {
-            name,
-            quantity: quantities.get(name) || 1,
+      name,
+      quantity: quantities.get(name) || 1,
             card
         };
     });
@@ -424,12 +424,12 @@
                 ${card.atk !== undefined ? `<span class="ygo-card-atk">ATK/${card.atk}</span>` : ''}
                 ${card.def !== undefined ? `<span class="ygo-card-def">DEF/${card.def}</span>` : ''}
               </div>`;
-    } else {
+      } else {
       return `<div class="ygo-card-stats">
                 <span class="ygo-card-type">${card.type}</span>
                 ${card.race ? `<span class="ygo-card-race">${card.race}</span>` : ''}
               </div>`;
-    }
+      }
   }
   function generatePriceInfo(card) {
     const tcgPrice = card.card_prices?.[0]?.tcgplayer_price || "N/A";
@@ -444,7 +444,7 @@
   function renderDecklists(context) {
     const { fetchCards } = context;
     document.querySelectorAll(".ygo-decklist").forEach(async (section) => {
-        const deckType = section.getAttribute("data-deck-section");
+      const deckType = section.getAttribute("data-deck-section");
         const cardList = [];
         
         // Parse the HTML list
@@ -463,10 +463,10 @@
         try {
             const cards = await fetchCards(cardList);
             await renderDeckSection(section, deckType, cardList, cards);
-        } catch (err) {
-            console.error("Error loading decklist:", err);
-            section.innerHTML = `<div class="ygo-error">❌ Error loading decklist: ${err.message}</div>`;
-        }
+      } catch (err) {
+        console.error("Error loading decklist:", err);
+        section.innerHTML = `<div class="ygo-error">❌ Error loading decklist: ${err.message}</div>`;
+      }
     });
   }
   function normalizeCardName(name) {
@@ -537,10 +537,10 @@
                                 <span class="ygo-card-quantity">${quantity}x</span>
                             </div>
                             <div class="ygo-card-details">
-                                <span class="ygo-card-name">${name}</span>
+                      <span class="ygo-card-name">${name}</span>
                                 <span class="ygo-card-error">Card not found</span>
                             </div>
-                        </div>`
+                  </div>`
                 });
                 continue;
             }
@@ -552,17 +552,17 @@
             console.log(`Found card:`, card);
             
             cardEntries.push({
-                html: `<div class="ygo-card-entry" data-card-id="${card.id}">
+            html: `<div class="ygo-card-entry" data-card-id="${card.id}">
                         <img src="${imgUrl}" alt="${card.name}" loading="lazy">
-                        <div class="ygo-card-details">
+                    <div class="ygo-card-details">
                             <span class="ygo-card-quantity">${quantity}x</span>
-                            <span class="ygo-card-name">${card.name}</span>
+                        <span class="ygo-card-name">${card.name}</span>
                             ${generateCardStats(card)}
-                        </div>
+                    </div>
                     </div>`,
                 name: card.name
             });
-        } catch (err) {
+    } catch (err) {
             console.error(`❌ Error rendering card entry: ${entry}`, err);
         }
     }
