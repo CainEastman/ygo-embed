@@ -9,6 +9,7 @@ import { fetchCard, fetchCards } from './modules/cardFetcher.js';
 import { setupHoverPreviews } from './modules/hoverPreview.js';
 import { renderCardEmbeds } from './modules/cardEmbed.js';
 import { renderDecklists } from './modules/decklistRenderer.js';
+import { convertMarkup } from './modules/contentParser.js';
 import { loadStyles } from './modules/styles.js';
 
 // Main initialization function
@@ -38,6 +39,9 @@ document.addEventListener('DOMContentLoaded', async function () {
     
     // Save cache before page unload
     window.addEventListener('beforeunload', () => saveCardCache(cardCache));
+    
+    // Parse content and convert special markup
+    convertMarkup();
     
     // Setup hover previews
     setupHoverPreviews(context);

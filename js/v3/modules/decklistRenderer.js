@@ -7,28 +7,22 @@
  */
 export function renderDecklists(context) {
     const { fetchCards } = context;
-    document.querySelectorAll(".ygo-decklist").forEach(async (section) => {
-        const deckType = section.getAttribute("data-deck-section");
-        const cardList = [];
+    
+    document.querySelectorAll('.ygo-decklist').forEach(async section => {
+        const titleMap = {
+            main: 'Main Deck',
+            extra: 'Extra Deck', 
+            side: 'Side Deck',
+            upgrade: null
+        };
         
-        // Parse the HTML list
-        section.querySelectorAll("li").forEach(li => {
-            const text = li.textContent.trim();
-            // Check if there's a quantity specified (e.g., "3x Card Name")
-            const match = text.match(/^(\d+)x\s+(.+)$/);
-            if (match) {
-                const [_, quantity, cardName] = match;
-                cardList.push(`${cardName} x${quantity}`);
-            } else {
-                cardList.push(text); // No quantity specified, use as is
-            }
-        });
-
+        const deckType = section.getAttribute('data-deck-section');
+        const names = JSON.parse(section.getAttribute('data-card-names'));
+        
         try {
-            const cards = await fetchCards(cardList);
-            await renderDeckSection(section, deckType, cardList, cards);
+            await renderDeckSection(section, names, deckType, titleMap, fetchCards);
         } catch (err) {
-            console.error("Error loading decklist:", err);
+            console.error('Error loading decklist:', err);
             section.innerHTML = `<div class="ygo-error">❌ Error loading decklist: ${err.message}</div>`;
         }
     });
@@ -40,9 +34,10 @@ export function renderDecklists(context) {
  * @returns {string} The normalized card name
  */
 function normalizeCardName(name) {
-    return name.toLowerCase()
-        .replace(/[^\w\s-]/g, '') // Remove special characters except spaces and hyphens
-        .replace(/\s+/g, ' ')     // Normalize spaces
+    return name
+        .toLowerCase()
+        .replace(/[^\w\s-]/g, '') // Remove special chars except hyphen
+        .replace(/\s+/g, ' ')     // Normalize whitespace
         .trim();
 }
 
@@ -72,14 +67,20 @@ function parseQuantity(entry) {
  */
 function findBestMatch(searchName, availableCards) {
     const normalized = normalizeCardName(searchName);
-    const exactMatch = availableCards.find(
-        (card) => normalizeCardName(card.name) === normalized
+    
+    // Try exact match first
+    const exactMatch = availableCards.find(card => 
+        normalizeCardName(card.name) === normalized
     );
     if (exactMatch) return exactMatch;
-    const partialMatches = availableCards.filter((card) => {
+    
+    // Try partial matches
+    const partialMatches = availableCards.filter(card => {
         const cardNorm = normalizeCardName(card.name);
         return cardNorm.includes(normalized) || normalized.includes(cardNorm);
     });
+    
+    // Return closest match by length if any found
     if (partialMatches.length > 0) {
         return partialMatches.reduce((best, current) => {
             const bestDiff = Math.abs(normalizeCardName(best.name).length - normalized.length);
@@ -87,6 +88,7 @@ function findBestMatch(searchName, availableCards) {
             return currentDiff < bestDiff ? current : best;
         });
     }
+    
     return null;
 }
 
@@ -98,86 +100,69 @@ function findBestMatch(searchName, availableCards) {
  * @param {Array<Object>} availableCards Array of available card objects
  */
 export async function renderDeckSection(container, section, cardList, availableCards) {
-    console.log(`Rendering section ${section} with cards:`, cardList);
-    console.log('Available cards:', availableCards);
-
-    const sectionElement = document.createElement('div');
-    sectionElement.className = 'ygo-deck-section';
-    
-    if (section) {
-        const sectionTitle = document.createElement('h3');
-        sectionTitle.textContent = section.charAt(0).toUpperCase() + section.slice(1) + ' Deck';
-        sectionElement.appendChild(sectionTitle);
-    }
-
-    const cardEntries = [];
-    for (const entry of cardList) {
-        try {
-            const { quantity, name } = parseQuantity(entry);
-            console.log(`Processing card: ${name} (Quantity: ${quantity})`);
-            
-            // Try exact match first
-            let cardData = availableCards.find(c => 
-                c.name.toLowerCase() === name.toLowerCase() ||
-                c.card?.name.toLowerCase() === name.toLowerCase()
-            );
-            
-            // If no exact match, try fuzzy match
-            if (!cardData) {
-                cardData = availableCards.find(c => {
-                    const cardName = (c.name || c.card?.name || '').toLowerCase();
-                    const searchName = name.toLowerCase();
-                    return cardName.includes(searchName) || searchName.includes(cardName);
-                });
-            }
-            
-            if (!cardData || (!cardData.card && !cardData.imgSmall)) {
-                console.warn(`⚠️ Card not found: ${name}`);
-                console.log('Card data:', cardData);
-                cardEntries.push({
-                    html: `<div class="ygo-card-entry ygo-card-missing">
-                            <div class="ygo-card-placeholder">
-                                <span class="ygo-card-quantity">${quantity}x</span>
-                            </div>
-                            <div class="ygo-card-details">
-                                <span class="ygo-card-name">${name}</span>
-                                <span class="ygo-card-error">Card not found</span>
-                            </div>
+    try {
+        // Create section container
+        const sectionEl = document.createElement('div');
+        sectionEl.className = `ygo-deck-section ygo-deck-${section}`;
+        sectionEl.innerHTML = `<h3>${section.toUpperCase()} DECK</h3>`;
+        
+        // Process each card entry
+        const processedCards = cardList.map(entry => {
+            try {
+                const { name, quantity } = parseQuantity(entry);
+                const card = findBestMatch(name, availableCards);
+                
+                if (!card) {
+                    console.warn(`Card not found: ${name}`);
+                    return {
+                        name,
+                        quantity,
+                        error: true,
+                        html: `<div class="ygo-card-missing">
+                            <span class="ygo-card-name">${name}</span>
+                            <span class="ygo-card-quantity">x${quantity}</span>
+                            <span class="ygo-error-msg">Card not found</span>
                         </div>`
-                });
-                continue;
-            }
-
-            // Handle both direct card objects and nested card objects
-            const card = cardData.card || cardData;
-            const imgUrl = card.imgSmall || card.card_images?.[0]?.image_url_small;
-            
-            console.log(`Found card:`, card);
-            
-            cardEntries.push({
-                html: `<div class="ygo-card-entry" data-card-id="${card.id}">
-                        <img src="${imgUrl}" alt="${card.name}" loading="lazy">
+                    };
+                }
+                
+                return {
+                    ...card,
+                    quantity,
+                    html: `<div class="ygo-card-entry" data-card-id="${card.id}">
+                        <img src="${card.image_url}" alt="${card.name}" loading="lazy">
                         <div class="ygo-card-details">
-                            <span class="ygo-card-quantity">${quantity}x</span>
                             <span class="ygo-card-name">${card.name}</span>
-                            ${generateCardStats(card)}
+                            <span class="ygo-card-quantity">x${quantity}</span>
                         </div>
-                    </div>`,
-                name: card.name
-            });
-        } catch (err) {
-            console.error(`❌ Error rendering card entry: ${entry}`, err);
-        }
+                    </div>`
+                };
+            } catch (err) {
+                console.error('Error processing card entry:', err);
+                return {
+                    name: entry,
+                    error: true,
+                    html: `<div class="ygo-card-error">
+                        <span class="ygo-error-msg">${err.message}</span>
+                    </div>`
+                };
+            }
+        });
+        
+        // Add cards to section
+        const cardsHtml = processedCards.map(card => card.html).join('');
+        sectionEl.innerHTML += `<div class="ygo-cards">${cardsHtml}</div>`;
+        
+        // Add section to container
+        container.appendChild(sectionEl);
+        
+        // Return processed cards for potential further use
+        return processedCards;
+    } catch (err) {
+        console.error('Error rendering deck section:', err);
+        container.innerHTML += `<div class="ygo-error">❌ Error rendering ${section} deck: ${err.message}</div>`;
+        return [];
     }
-
-    const cardsContainer = document.createElement('div');
-    cardsContainer.className = 'ygo-cards';
-    cardsContainer.innerHTML = cardEntries.map(entry => entry.html).join('');
-    sectionElement.appendChild(cardsContainer);
-    
-    container.innerHTML = ''; // Clear the container
-    container.appendChild(sectionElement);
-    return cardEntries;
 }
 
 /**

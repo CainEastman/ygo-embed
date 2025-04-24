@@ -74,11 +74,19 @@ The codebase is organized into modules following the single responsibility princ
    - Provides clear error visualization
    - Returns processed card data for potential reuse
 
-8. **Styles Module** (`modules/styles.js`)
+8. **Content Parser Module** (`modules/contentParser.js`)
+   - Converts special markup in content
+   - Transforms paragraphs into interactive elements
+   - Handles card name variations and case sensitivity
+   - Supports multiple quantity formats
+   - Provides detailed error messages
+   - Implements graceful error recovery
+
+9. **Styles Module** (`modules/styles.js`)
    - Ensures required CSS is loaded
    - Manages style dependencies
 
-9. **Constants Module** (`modules/constants.js`)
+10. **Constants Module** (`modules/constants.js`)
     - Defines shared constants
     - Centralizes configuration values
     - Improves maintainability
@@ -89,12 +97,6 @@ The codebase is organized into modules following the single responsibility princ
 - When a module approaches the line limit, consider further decomposition
 - Consistent use of constants across modules
 - Standardized error handling and logging approaches
-
-### Version History
-- v3.13: Removed contentParser module as it's no longer needed
-- v3.12: Enhanced deck list rendering with smart card matching
-- v3.11: Switched to GET requests for API calls
-- v3.10: Integrated CSS bundling and automated CDN cache management
 
 ### Component Flow
 1. Main module initializes and loads other modules

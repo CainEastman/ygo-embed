@@ -156,6 +156,7 @@ The YGO Embed script is organized in a modular structure:
 - **Hover Preview** (`js/v3/modules/hoverPreview.js`): Implements card hover effects
 - **Card Embed** (`js/v3/modules/cardEmbed.js`): Renders individual card displays
 - **Decklist Renderer** (`js/v3/modules/decklistRenderer.js`): Renders collections of cards by deck section
+- **Content Parser** (`js/v3/modules/contentParser.js`): Converts special markup in content
 - **Styles** (`js/v3/modules/styles.js`): Handles CSS loading
 - **Constants** (`js/v3/modules/constants.js`): Shared constants used across modules
 

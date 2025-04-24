@@ -30,7 +30,6 @@
   - [x] Restructure into modular components
   - [x] Use ES modules for better maintainability
   - [x] Extract reusable functions into dedicated modules
-  - [x] Remove unnecessary contentParser module
   - [ ] Standardize the use of constants across all modules
   - [ ] Consolidate duplicate event listeners for page unload
 
@@ -119,7 +118,3 @@
   - Monitor for any remaining issues
 
 ## Completed Tasks 
-- [x] Removed contentParser module as it was no longer needed (v3.13)
-- [x] Fixed decklist rendering issues with GET requests (v3.11)
-- [x] Integrated CSS bundling for simpler deployment (v3.10)
-- [x] Added smart card name matching for better results (v3.12) 

@@ -100,6 +100,7 @@ The library is organized into the following modules:
 - **Hover Preview** (`v3/modules/hoverPreview.js`): Implements card hover functionality
 - **Card Embed** (`v3/modules/cardEmbed.js`): Renders detailed card displays
 - **Decklist Renderer** (`v3/modules/decklistRenderer.js`): Renders collections of cards
+- **Content Parser** (`v3/modules/contentParser.js`): Converts special markup
 - **Styles** (`v3/modules/styles.js`): Manages CSS loading
 - **Constants** (`v3/modules/constants.js`): Shared constants
 

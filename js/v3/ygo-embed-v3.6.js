@@ -120,7 +120,7 @@
         const batch = this.pending.splice(0, API.BATCH_SIZE);
             const cardNames = batch.map(item => item.cardName);
             
-            try {
+        try {
                 console.log('Processing batch:', cardNames);
                 const cards = await fetchCardBatch(cardNames);
                 
@@ -172,8 +172,8 @@
         const name = prefixMatch[2].trim();
         console.log(`Parsed prefix format: "${entry}" -> name: "${name}", quantity: ${quantity}`);
         return { quantity, name };
-    }
-    
+  }
+
     // If no quantity specified, return 1
     console.log(`No quantity found: "${entry}" -> name: "${entry}", quantity: 1`);
       return {
@@ -459,8 +459,8 @@
                 cardList.push(text); // No quantity specified, use as is
             }
         });
-
-        try {
+      
+      try {
             const cards = await fetchCards(cardList);
             await renderDeckSection(section, deckType, cardList, cards);
       } catch (err) {
@@ -497,7 +497,7 @@
   async function renderDeckSection(container, section, cardList, availableCards) {
     console.log(`Rendering section ${section} with cards:`, cardList);
     console.log('Available cards:', availableCards);
-
+      
     const sectionElement = document.createElement('div');
     sectionElement.className = 'ygo-deck-section';
     
@@ -543,7 +543,7 @@
                   </div>`
                 });
                 continue;
-            }
+          }
 
             // Handle both direct card objects and nested card objects
             const card = cardData.card || cardData;
@@ -564,8 +564,8 @@
             });
     } catch (err) {
             console.error(`❌ Error rendering card entry: ${entry}`, err);
-        }
     }
+  }
 
     const cardsContainer = document.createElement('div');
     cardsContainer.className = 'ygo-cards';
@@ -848,6 +848,34 @@
     }
   }
 
+  // js/v3/modules/contentParser.js
+  var CARD_EMBED_REGEX = /^embed::(.+)$/;
+
+  function convertMarkup(container) {
+    container.querySelectorAll("p").forEach((p) => {
+        const text = p.textContent.trim();
+        const embedMatch = text.match(CARD_EMBED_REGEX);
+        if (embedMatch) {
+            try {
+                convertCardEmbed(p, embedMatch[1]);
+            } catch (err) {
+                console.error("Error parsing card embed:", err);
+                p.innerHTML = `<div class="ygo-error">❌ Error parsing card embed: ${err.message}</div>`;
+            }
+        }
+    });
+  }
+
+  function convertCardEmbed(p, cardName) {
+    if (!cardName || cardName.trim().length === 0) {
+        throw new Error("Card name cannot be empty");
+    }
+    const container = document.createElement("div");
+    container.className = "ygo-card-embed";
+    container.setAttribute("data-card-name", cardName.trim());
+    p.parentNode.replaceChild(container, p);
+  }
+
   // Wait for DropInBlog content to be ready
   const waitForDropInBlog = () => {
     return new Promise((resolve) => {
@@ -892,6 +920,12 @@
       // Save cache before page unload
       window.addEventListener('beforeunload', () => saveCardCache(cardCache));
       
+      // Convert card embeds in DropInBlog content
+      const dibContent = document.querySelector('.dib-post-content');
+      if (dibContent) {
+        convertMarkup(dibContent);
+      }
+      
       // Setup hover previews
     setupHoverPreviews(context);
       
@@ -907,7 +941,7 @@
       saveCardCache(cardCache);
     });
       
-      console.log('✅ YGO embed script v3.4 initialized successfully');
+      console.log('✅ YGO embed script initialized successfully');
     } catch (error) {
       console.error('❌ Error initializing YGO embed script:', error);
     }
