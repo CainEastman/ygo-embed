@@ -46,33 +46,50 @@
     }
   }
   function getCardFromCache(cardCache, name) {
-    if (cardCache[name] && cardCache[name].complete) {
-      return cardCache[name];
+    const searchName = name.trim();
+    
+    // Try exact match first
+    if (cardCache[searchName] && cardCache[searchName].complete) {
+        return cardCache[searchName];
     }
+    
+    // Try normalized match
+    const normalizedName = normalizeCardName(searchName);
+    if (cardCache[normalizedName] && cardCache[normalizedName].complete) {
+        return cardCache[normalizedName];
+    }
+    
+    // Try case-insensitive match
     const cardName = Object.keys(cardCache).find(
-      (key) => key.toLowerCase() === name.toLowerCase()
+        key => key.toLowerCase() === searchName.toLowerCase()
     );
     if (cardName && cardCache[cardName].complete) {
-      return cardCache[cardName];
+        return cardCache[cardName];
     }
+    
     return null;
   }
   function addCardToCache(cardCache, card) {
     const cardName = card.name.trim();
-    cardCache[cardName] = {
-      ...card,
-      imgSmall: card.card_images[0].image_url_small,
-      imgLarge: card.card_images[0].image_url,
-      complete: true
+    const cardData = {
+        ...card,
+        imgSmall: card.card_images?.[0]?.image_url_small,
+        imgLarge: card.card_images?.[0]?.image_url,
+        complete: true
     };
+    
+    // Add both the exact name and normalized name to cache
+    cardCache[cardName] = cardData;
+    cardCache[normalizeCardName(cardName)] = cardData;
+    
+    console.log(`Added to cache: ${cardName}`, cardData);
   }
 
   // js/v3/modules/constants.js
-  var API = {
+  const API = {
     BASE_URL: "https://db.ygoprodeck.com/api/v7",
-    BATCH_SIZE: 10,
-    TIMEOUT: 1e4
-    // 10 seconds
+    BATCH_SIZE: 20,  // Increased batch size
+    TIMEOUT: 15000   // Increased timeout to 15 seconds
   };
   var CACHE = {
     VERSION: "ygo-cache-v3.3",
@@ -85,128 +102,80 @@
   // js/v3/modules/api.js
   function setupRequestQueue(cardCache) {
     const requestQueue = {
-      pending: [],
-      inProgress: false,
-      add(cardName, resolve, reject) {
-        this.pending.push({ cardName, resolve, reject });
-        if (!this.inProgress) {
-          this.processQueue();
-        }
-      },
-      async processQueue() {
-        if (this.pending.length === 0) {
-          this.inProgress = false;
-          return;
-        }
-        this.inProgress = true;
-        const batch = this.pending.splice(0, API.BATCH_SIZE);
-        const cardNames = batch.map((item) => item.cardName);
-        try {
-          const missingCards = cardNames.filter((name) => !cardCache[name] || !cardCache[name].complete);
-          if (missingCards.length > 0) {
-            await this.fetchCardBatch(missingCards);
-          }
-          for (const item of batch) {
-            if (cardCache[item.cardName] && cardCache[item.cardName].complete) {
-              item.resolve(cardCache[item.cardName]);
-            } else {
-              item.reject(new Error(`Failed to load card: ${item.cardName}`));
+        pending: [],
+        inProgress: false,
+        async add(cardName, resolve, reject) {
+            this.pending.push({ cardName, resolve, reject });
+            if (!this.inProgress) {
+                await this.processQueue();
             }
-          }
-        } catch (error) {
-          for (const item of batch) {
-            item.reject(error);
-          }
-        }
-        setTimeout(() => this.processQueue(), 50);
-      },
-      async fetchCardBatch(cardNames) {
-        const uniqueNames = [...new Set(cardNames.map(name => name.trim()))];
-        if (uniqueNames.length === 0) return [];
-        
-        try {
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), API.TIMEOUT);
-          let response;
-          
-          if (uniqueNames.length === 1) {
-            response = await fetch(
-              `${API.BASE_URL}/cardinfo.php?name=${encodeURIComponent(uniqueNames[0])}`,
-              { signal: controller.signal }
-            );
-          } else {
-            const params = new URLSearchParams();
-            uniqueNames.forEach(name => params.append('name', name));
-            response = await fetch(`${API.BASE_URL}/cardinfo.php?${params.toString()}`, {
-              method: 'GET',
-              signal: controller.signal
-            });
-          }
-          
-          clearTimeout(timeoutId);
-          
-          if (!response.ok) {
-            throw new Error(`API responded with status ${response.status}`);
-          }
-          
-          const data = await response.json();
-          
-          if (!data.data || data.data.length === 0) {
-            throw new Error("No card data found");
-          }
-          
-          data.data.forEach(card => {
-            addCardToCache(cardCache, card);
-          });
-          
-          const missingCards = uniqueNames.filter(
-            name => !Object.keys(cardCache).some(
-              key => key.toLowerCase() === name.toLowerCase()
-            )
-          );
-          
-          if (missingCards.length > 0) {
-            console.warn(`⚠️ Some cards were not found in the API: ${missingCards.join(", ")}`);
-            // Try fetching missing cards individually
-            for (const name of missingCards) {
-              try {
-                const singleResponse = await fetch(
-                  `${API.BASE_URL}/cardinfo.php?name=${encodeURIComponent(name)}`,
-                  { signal: controller.signal }
-                );
-                if (singleResponse.ok) {
-                  const singleData = await singleResponse.json();
-                  if (singleData.data && singleData.data.length > 0) {
-                    addCardToCache(cardCache, singleData.data[0]);
-                  }
+        },
+        async processQueue() {
+            if (this.pending.length === 0) {
+                this.inProgress = false;
+                return;
+            }
+            
+            this.inProgress = true;
+            const batch = this.pending.splice(0, API.BATCH_SIZE);
+            const cardNames = batch.map(item => item.cardName);
+            
+            try {
+                console.log('Processing batch:', cardNames);
+                const cards = await fetchCardBatch(cardNames);
+                
+                // Add cards to cache
+                cards.forEach(card => addCardToCache(cardCache, card));
+                
+                // Resolve promises
+                for (const item of batch) {
+                    const card = getCardFromCache(cardCache, item.cardName);
+                    if (card) {
+                        item.resolve(card);
+                    } else {
+                        item.reject(new Error(`Failed to load card: ${item.cardName}`));
+                    }
                 }
-              } catch (err) {
-                console.error(`Failed to fetch individual card: ${name}`, err);
-              }
+            } catch (error) {
+                console.error('Batch processing error:', error);
+                for (const item of batch) {
+                    item.reject(error);
+                }
             }
-          }
-          
-          return data.data;
-        } catch (err) {
-          console.error(`❌ Batch fetch error for cards: ${uniqueNames.join(", ")}`, err);
-          throw err;
+            
+            // Process next batch
+            setTimeout(() => this.processQueue(), 50);
         }
-      }
     };
+    
     return requestQueue;
   }
 
   // js/v3/modules/cardFetcher.js
   function parseQuantity(entry) {
-    const match = entry.match(/^(\d+)x?\s+(.+)$/) || entry.match(/^(.+?)\s+x(\d+)$/);
-    if (match) {
-      const [_, quantityStr, name] = match[1] === undefined ? [null, match[2], match[1]] : match;
-      return {
-        quantity: parseInt(quantityStr, 10) || 1,
-        name: name.trim()
-      };
+    // Handle "Card Name x3" format
+    const xMatch = entry.match(/^(.+?)\s*x\s*(\d+)$/i);
+    if (xMatch) {
+        return {
+            quantity: parseInt(xMatch[2], 10),
+            name: xMatch[1].trim()
+        };
     }
-    return { quantity: 1, name: entry.trim() };
+    
+    // Handle "3x Card Name" format
+    const prefixMatch = entry.match(/^(\d+)x?\s+(.+)$/i);
+    if (prefixMatch) {
+        return {
+            quantity: parseInt(prefixMatch[1], 10),
+            name: prefixMatch[2].trim()
+        };
+    }
+    
+    // If no quantity specified, return 1
+    return { 
+        quantity: 1, 
+        name: entry.trim() 
+    };
   }
   async function fetchCard(name, cardCache, requestQueue) {
     try {
@@ -229,48 +198,62 @@
     }
   }
   async function fetchCards(cardNames, cardCache, requestQueue) {
+    console.log('Fetching cards:', cardNames);
     const uniqueNames = new Set();
     const quantities = new Map();
     
     // Parse quantities and collect unique names
     cardNames.forEach(entry => {
-      try {
-        const { quantity, name } = parseQuantity(entry);
-        uniqueNames.add(name);
-        quantities.set(name, (quantities.get(name) || 0) + quantity);
-      } catch (err) {
-        console.warn(`⚠️ Error parsing card entry: ${entry}`, err);
-        uniqueNames.add(entry.trim());
-        quantities.set(entry.trim(), 1);
-      }
+        try {
+            const { quantity, name } = parseQuantity(entry);
+            console.log(`Parsed entry: "${entry}" -> quantity: ${quantity}, name: "${name}"`);
+            uniqueNames.add(name);
+            quantities.set(name, (quantities.get(name) || 0) + quantity);
+        } catch (err) {
+            console.warn(`⚠️ Error parsing card entry: ${entry}`, err);
+            uniqueNames.add(entry.trim());
+            quantities.set(entry.trim(), 1);
+        }
     });
+
+    console.log('Unique names:', [...uniqueNames]);
+    console.log('Quantities:', Object.fromEntries(quantities));
 
     // Filter out cards that are already in cache
     const uncachedNames = [...uniqueNames].filter(
-      name => !getCardFromCache(cardCache, name)
+        name => !getCardFromCache(cardCache, name)
     );
+
+    console.log('Uncached names:', uncachedNames);
 
     // Fetch uncached cards
     if (uncachedNames.length > 0) {
-      const promises = uncachedNames.map(name =>
-        new Promise((resolve, reject) => {
-          requestQueue.add(name, resolve, reject);
-        })
-      );
+        const promises = uncachedNames.map(name =>
+            new Promise((resolve, reject) => {
+                requestQueue.add(name, resolve, reject);
+            })
+        );
 
-      try {
-        await Promise.all(promises);
-      } catch (err) {
-        console.error("❌ Error fetching cards:", err);
-      }
+        try {
+            await Promise.all(promises);
+        } catch (err) {
+            console.error("❌ Error fetching cards:", err);
+        }
     }
 
     // Return results with quantities
-    return [...uniqueNames].map(name => ({
-      name,
-      quantity: quantities.get(name) || 1,
-      card: getCardFromCache(cardCache, name)
-    }));
+    const results = [...uniqueNames].map(name => {
+        const card = getCardFromCache(cardCache, name);
+        console.log(`Result for "${name}":`, card);
+        return {
+            name,
+            quantity: quantities.get(name) || 1,
+            card
+        };
+    });
+
+    console.log('Final results:', results);
+    return results;
   }
 
   // js/v3/modules/hoverPreview.js
@@ -470,7 +453,10 @@
     });
   }
   function normalizeCardName(name) {
-    return name.toLowerCase().replace(/[^\w\s-]/g, "").replace(/\s+/g, " ").trim();
+    return name.toLowerCase()
+        .replace(/[^\w\s-]/g, '') // Remove special characters except spaces and hyphens
+        .replace(/\s+/g, ' ')     // Normalize spaces
+        .trim();
   }
   function findBestMatch(searchName, availableCards) {
     const normalized = normalizeCardName(searchName);
@@ -492,6 +478,9 @@
     return null;
   }
   async function renderDeckSection(container, section, cardList, availableCards) {
+    console.log(`Rendering section ${section} with cards:`, cardList);
+    console.log('Available cards:', availableCards);
+
     const sectionElement = document.createElement('div');
     sectionElement.className = 'ygo-deck-section';
     
@@ -505,10 +494,26 @@
     for (const entry of cardList) {
         try {
             const { quantity, name } = parseQuantity(entry);
-            const cardData = availableCards.find(c => c.name === name || normalizeCardName(c.name) === normalizeCardName(name));
+            console.log(`Processing card: ${name} (Quantity: ${quantity})`);
             
-            if (!cardData || !cardData.card) {
+            // Try exact match first
+            let cardData = availableCards.find(c => 
+                c.name.toLowerCase() === name.toLowerCase() ||
+                c.card?.name.toLowerCase() === name.toLowerCase()
+            );
+            
+            // If no exact match, try fuzzy match
+            if (!cardData) {
+                cardData = availableCards.find(c => {
+                    const cardName = (c.name || c.card?.name || '').toLowerCase();
+                    const searchName = name.toLowerCase();
+                    return cardName.includes(searchName) || searchName.includes(cardName);
+                });
+            }
+            
+            if (!cardData || (!cardData.card && !cardData.imgSmall)) {
                 console.warn(`⚠️ Card not found: ${name}`);
+                console.log('Card data:', cardData);
                 cardEntries.push({
                     html: `<div class="ygo-card-entry ygo-card-missing">
                             <div class="ygo-card-placeholder">
@@ -523,10 +528,15 @@
                 continue;
             }
 
-            const card = cardData.card;
+            // Handle both direct card objects and nested card objects
+            const card = cardData.card || cardData;
+            const imgUrl = card.imgSmall || card.card_images?.[0]?.image_url_small;
+            
+            console.log(`Found card:`, card);
+            
             cardEntries.push({
                 html: `<div class="ygo-card-entry" data-card-id="${card.id}">
-                        <img src="${card.imgSmall}" alt="${card.name}" loading="lazy">
+                        <img src="${imgUrl}" alt="${card.name}" loading="lazy">
                         <div class="ygo-card-details">
                             <span class="ygo-card-quantity">${quantity}x</span>
                             <span class="ygo-card-name">${card.name}</span>
@@ -580,31 +590,33 @@
   function convertDeckList(p, section, cardList) {
     let cards;
     try {
-      // First try parsing as JSON
-      try {
-        cards = JSON.parse(cardList);
-      } catch (e) {
-        // If JSON parsing fails, treat as comma-separated list
-        cards = cardList.split(",").map(entry => entry.trim())
-          .filter(entry => entry.length > 0)
-          .map(entry => {
-            // Remove quotes if present
-            return entry.replace(/^["'](.*)["']$/, '$1');
-          });
-      }
+        // First try parsing as JSON
+        try {
+            cards = JSON.parse(cardList);
+            console.log('Parsed deck list as JSON:', cards);
+        } catch (e) {
+            // If JSON parsing fails, treat as comma-separated list
+            cards = cardList.split(",").map(entry => entry.trim())
+                .filter(entry => entry.length > 0)
+                .map(entry => {
+                    // Remove quotes if present
+                    return entry.replace(/^["'](.*)["']$/, '$1');
+                });
+            console.log('Parsed deck list as comma-separated:', cards);
+        }
 
-      if (!Array.isArray(cards) || cards.length === 0) {
-        throw new Error("Invalid deck list format - must be JSON array or comma-separated list");
-      }
+        if (!Array.isArray(cards) || cards.length === 0) {
+            throw new Error("Invalid deck list format - must be JSON array or comma-separated list");
+        }
 
-      const container = document.createElement("div");
-      container.className = "ygo-decklist";
-      container.setAttribute("data-deck-section", section);
-      container.setAttribute("data-card-names", JSON.stringify(cards));
-      p.parentNode.replaceChild(container, p);
+        const container = document.createElement("div");
+        container.className = "ygo-decklist";
+        container.setAttribute("data-deck-section", section);
+        container.setAttribute("data-card-names", JSON.stringify(cards));
+        p.parentNode.replaceChild(container, p);
     } catch (err) {
-      console.error("Error parsing deck list:", err);
-      p.innerHTML = `<div class="ygo-error">❌ Error parsing deck list: ${err.message}</div>`;
+        console.error("Error parsing deck list:", err);
+        p.innerHTML = `<div class="ygo-error">❌ Error parsing deck list: ${err.message}</div>`;
     }
   }
   function convertCardEmbed(p, cardName) {
@@ -964,6 +976,68 @@
     document.addEventListener('DOMContentLoaded', init);
   } else {
     init();
+  }
+
+  // js/v3/modules/api.js
+  async function fetchCardBatch(cardNames) {
+    const uniqueNames = [...new Set(cardNames.map(name => name.trim()))];
+    if (uniqueNames.length === 0) return [];
+    
+    try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), API.TIMEOUT);
+        
+        console.log('Fetching batch:', uniqueNames);
+        
+        // Fetch cards one by one for more accurate results
+        const allCards = [];
+        for (const name of uniqueNames) {
+            try {
+                // Clean the name and remove quantity indicators
+                const cleanName = name.replace(/\s*x\s*\d+$/, '').trim();
+                const params = new URLSearchParams({
+                    fname: cleanName,  // Use fuzzy name matching
+                });
+                
+                const url = `${API.BASE_URL}/cardinfo.php?${params.toString()}`;
+                console.log(`Fetching card "${cleanName}" from:`, url);
+                
+                const response = await fetch(url, {
+                    method: 'GET',
+                    signal: controller.signal
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.data && data.data.length > 0) {
+                        // Find the best match from the results
+                        const bestMatch = data.data.find(card => 
+                            card.name.toLowerCase() === cleanName.toLowerCase()
+                        ) || data.data[0];
+                        
+                        allCards.push(bestMatch);
+                        console.log(`Found card "${cleanName}":`, bestMatch);
+                    } else {
+                        console.warn(`No results found for card "${cleanName}"`);
+                    }
+                } else {
+                    console.warn(`Failed to fetch card "${cleanName}": ${response.status}`);
+                }
+            } catch (err) {
+                console.error(`Error fetching card "${name}":`, err);
+            }
+            
+            // Add a small delay between requests to avoid rate limiting
+            await new Promise(resolve => setTimeout(resolve, 50));
+        }
+        
+        clearTimeout(timeoutId);
+        return allCards;
+        
+    } catch (err) {
+        console.error(`❌ Batch fetch error for cards: ${uniqueNames.join(", ")}`, err);
+        throw err;
+    }
   }
 })();
 //# sourceMappingURL=ygo-embed-v3.4.js.map
