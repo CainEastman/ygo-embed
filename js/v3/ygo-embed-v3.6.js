@@ -429,21 +429,20 @@
     embedDiv.appendChild(container);
   }
   function generateCardStats(card) {
-    let statsHTML = `<div style="display:grid;grid-template-columns:repeat(2, 1fr);gap:8px;margin-bottom:12px;">`;
-    statsHTML += `<div><strong>Type:</strong> ${card.type}</div>`;
-    if (card.type.includes("Monster")) {
-      statsHTML += `<div><strong>Attribute:</strong> ${card.attribute || "N/A"}</div>`;
-      statsHTML += `<div><strong>Typing:</strong> ${card.race}</div>`;
-      statsHTML += `<div><strong>Level/Rank:</strong> ${card.level || card.rank || "N/A"}</div>`;
-      statsHTML += `<div><strong>ATK:</strong> ${card.atk !== void 0 ? card.atk : "N/A"}</div>`;
-      if (card.linkval !== void 0) {
-        statsHTML += `<div><strong>Link:</strong> ${card.linkval}</div>`;
-      } else {
-        statsHTML += `<div><strong>DEF:</strong> ${card.def !== void 0 ? card.def : "N/A"}</div>`;
-      }
+    if (card.type.toLowerCase().includes('monster')) {
+      return `<div class="ygo-card-stats">
+                <span class="ygo-card-type">${card.type}</span>
+                <span class="ygo-card-attribute">${card.attribute || ''}</span>
+                ${card.level ? `<span class="ygo-card-level">Level ${card.level}</span>` : ''}
+                ${card.atk !== undefined ? `<span class="ygo-card-atk">ATK/${card.atk}</span>` : ''}
+                ${card.def !== undefined ? `<span class="ygo-card-def">DEF/${card.def}</span>` : ''}
+              </div>`;
+    } else {
+      return `<div class="ygo-card-stats">
+                <span class="ygo-card-type">${card.type}</span>
+                ${card.race ? `<span class="ygo-card-race">${card.race}</span>` : ''}
+              </div>`;
     }
-    statsHTML += `</div>`;
-    return statsHTML;
   }
   function generatePriceInfo(card) {
     const tcgPrice = card.card_prices?.[0]?.tcgplayer_price || "N/A";
@@ -493,62 +492,56 @@
     return null;
   }
   async function renderDeckSection(container, section, cardList, availableCards) {
-    try {
-      const sectionName = String(section || 'main').toLowerCase();
-      
-      const sectionEl = document.createElement('div');
-      sectionEl.className = `ygo-deck-section ygo-deck-${sectionName}`;
-      sectionEl.innerHTML = `<h3>${sectionName.toUpperCase()} DECK</h3>`;
-
-      const processedCards = cardList.map(entry => {
-        try {
-          const { name, quantity } = parseQuantity(entry);
-          const card = findBestMatch(name, availableCards);
-          if (!card) {
-            console.warn(`Card not found: ${name}`);
-            return {
-              name,
-              quantity,
-              error: true,
-              html: `<div class="ygo-card-missing">
-                      <span class="ygo-card-name">${name}</span>
-                      <span class="ygo-card-quantity">x${quantity}</span>
-                      <span class="ygo-error-msg">Card not found</span>
-                  </div>`
-            };
-          }
-          return {
-            ...card,
-            quantity,
-            html: `<div class="ygo-card-entry" data-card-id="${card.id}">
-                    <img src="${card.image_url}" alt="${card.name}" loading="lazy">
-                    <div class="ygo-card-details">
-                        <span class="ygo-card-name">${card.name}</span>
-                        <span class="ygo-card-quantity">x${quantity}</span>
-                    </div>
-                </div>`
-          };
-        } catch (err) {
-          console.error('Error processing card entry:', err);
-          return {
-            name: entry,
-            error: true,
-            html: `<div class="ygo-card-error">
-                    <span class="ygo-error-msg">${err.message}</span>
-                </div>`
-          };
-        }
-      });
-
-      const cardsHtml = processedCards.map(card => card.html).join('');
-      sectionEl.innerHTML += `<div class="ygo-cards">${cardsHtml}</div>`;
-      container.appendChild(sectionEl);
-      return processedCards;
-    } catch (err) {
-      console.error('Error rendering deck section:', err);
-      container.innerHTML += `<div class="ygo-error">❌ Error rendering ${section} deck: ${err.message}</div>`;
-      return [];
+    const sectionElement = document.createElement('div');
+    sectionElement.className = 'ygo-deck-section';
+    if (section) {
+      const sectionTitle = document.createElement('h3');
+      sectionTitle.textContent = section;
+      sectionElement.appendChild(sectionTitle);
     }
+
+    const cardEntries = [];
+    for (const entry of cardList) {
+      try {
+        const { quantity, name } = parseQuantity(entry);
+        const card = findBestMatch(name, availableCards);
+        
+        if (!card) {
+          console.warn(`⚠️ Card not found: ${name}`);
+          cardEntries.push({
+            html: `<div class="ygo-card-entry ygo-card-missing">
+                    <div class="ygo-card-placeholder">
+                      <span class="ygo-card-quantity">${quantity}</span>
+                    </div>
+                    <div class="ygo-card-details">
+                      <span class="ygo-card-name">${name}</span>
+                      <span class="ygo-card-error">Card not found</span>
+                    </div>
+                  </div>`
+          });
+          continue;
+        }
+
+        cardEntries.push({
+          html: `<div class="ygo-card-entry" data-card-id="${card.id}">
+                  <img src="${card.imgLarge}" alt="${card.name}" loading="lazy">
+                  <div class="ygo-card-details">
+                    <span class="ygo-card-quantity">${quantity}</span>
+                    <span class="ygo-card-name">${card.name}</span>
+                    ${generateCardStats(card)}
+                  </div>
+                </div>`,
+          name: card.name
+        });
+      } catch (err) {
+        console.error(`❌ Error rendering card entry: ${entry}`, err);
+      }
+    }
+
+    const cardsHtml = cardEntries.map(entry => entry.html).join('');
+    sectionElement.innerHTML += `<div class="ygo-cards">${cardsHtml}</div>`;
+    container.appendChild(sectionElement);
+    return cardEntries;
   }
 
   // js/v3/modules/contentParser.js
@@ -619,7 +612,7 @@
   }
 
   // js/v3/modules/styles-generated.js
-  var styles = `/* == YGO Embed and Decklist Styles v3.0 == */
+  const styles = `/* == YGO Embed and Decklist Styles v3.0 == */
 
 .ygo-embed-container {
     display: flex;
@@ -747,15 +740,57 @@
     border-left: 3px solid #ff6b6b;
     margin: 10px 0;
     font-size: 0.9em;
-} `;
-  var styles_generated_default = styles;
+}
+
+/* New Card Stats Styles */
+.ygo-card-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 8px 0;
+    font-size: 0.9em;
+}
+
+.ygo-card-stats span {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 4px 8px;
+    border-radius: 4px;
+    color: #fff;
+}
+
+.ygo-card-type {
+    font-weight: bold;
+    background: rgba(255, 255, 255, 0.2) !important;
+}
+
+.ygo-card-attribute {
+    color: #ff6b6b !important;
+}
+
+.ygo-card-level {
+    color: #ffd700 !important;
+}
+
+.ygo-card-atk, .ygo-card-def {
+    font-family: monospace;
+    background: rgba(255, 255, 255, 0.15) !important;
+}
+
+.ygo-card-race {
+    font-style: italic;
+}`;
+
+  // Add styles to document
+  const styleSheet = document.createElement("style");
+  styleSheet.textContent = styles;
+  document.head.appendChild(styleSheet);
 
   // js/v3/modules/styles.js
   function loadStyles() {
     if (!document.getElementById("ygo-embed-styles")) {
       const style = document.createElement("style");
       style.id = "ygo-embed-styles";
-      style.textContent = styles_generated_default;
+      style.textContent = styles;
       document.head.appendChild(style);
       console.log("\u2705 YGO embed styles loaded");
     }
