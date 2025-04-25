@@ -113,6 +113,14 @@ The library is organized into the following modules:
 
 ## Version History
 
+### v3.56
+- Removed hardcoded font-family to inherit from site styles
+- Fixed cursor styles for deck list card names and images
+- Improved spacing in deck lists
+- Fixed blog content spacing issues
+- Added specific targeting for deck list elements
+- Optimized CSS selectors for better compatibility
+
 ### v3.0.0
 - Complete rewrite using ES modules
 - Added deck list support
@@ -137,4 +145,8 @@ The library is organized into the following modules:
 
 ## License
 
-MIT License - See LICENSE file for details 
+All Rights Reserved
+
+This software is proprietary and confidential. No part of this software may be reproduced, distributed, or transmitted in any form or by any means, without the prior written permission of the copyright holder.
+
+The software is provided "as is", without warranty of any kind, express or implied. 
