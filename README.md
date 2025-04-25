@@ -42,10 +42,16 @@ A modular JavaScript library for embedding Yu-Gi-Oh! cards and decklists in web 
 
 ## Installation
 
-### CDN Usage (Recommended)
+### Direct Load via jsDelivr (Recommended)
+```html
+<!-- YGO Card Embed Script v3.56 via jsDelivr Direct Load -->
+<script src="https://cdn.jsdelivr.net/gh/CainEastman/ygo-embed@main/js/v3/ygo-embed-v3.56.js" integrity="" crossorigin="anonymous"></script>
+```
+
+### CDN Usage (ES Modules)
 ```html
 <script type="module">
-  import { YGOEmbed } from 'https://cdn.jsdelivr.net/gh/DawnbrandBots/ygo-embed@latest/js/v3/ygo-embed-v3.js';
+  import { YGOEmbed } from 'https://cdn.jsdelivr.net/gh/CainEastman/ygo-embed@main/js/v3/ygo-embed-v3.56.js';
   const embed = new YGOEmbed();
   embed.init();
 </script>
@@ -65,7 +71,7 @@ When integrating with DropInBlog, ensure proper initialization by:
 <script type="module">
   // Wait for DropInBlog content to be fully loaded
   window.addEventListener('load', () => {
-    import { YGOEmbed } from 'https://cdn.jsdelivr.net/gh/DawnbrandBots/ygo-embed@latest/js/v3/ygo-embed-v3.js';
+    import { YGOEmbed } from 'https://cdn.jsdelivr.net/gh/CainEastman/ygo-embed@main/js/v3/ygo-embed-v3.56.js';
     const embed = new YGOEmbed();
     embed.init();
   });

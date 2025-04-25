@@ -20,13 +20,20 @@ This guide explains how to integrate the YGO Embed script with your DropInBlog-p
 
 Copy one of the code snippets below and paste it into the editor:
 
-#### Option A: Bundled Version (Recommended for most users)
+#### Option A: Direct Load (Recommended)
+
+```html
+<!-- YGO Card Embed Script v3.56 via jsDelivr Direct Load -->
+<script src="https://cdn.jsdelivr.net/gh/CainEastman/ygo-embed@main/js/v3/ygo-embed-v3.56.js" integrity="" crossorigin="anonymous"></script>
+```
+
+#### Option B: Bundled Version
 
 ```html
 <!-- YGO Card & Decklist Embed Snippet -->
 
 <!-- CSS Styles -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/CainEastman/ygo-embed@v3.56/js/v3/ygo-embed-v3.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/CainEastman/ygo-embed@main/js/v3/ygo-embed-v3.css">
 
 <!-- Bundled Script Version -->
 <script>
@@ -34,7 +41,7 @@ Copy one of the code snippets below and paste it into the editor:
     document.addEventListener('DOMContentLoaded', function() {
         // Create script element
         const script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/gh/CainEastman/ygo-embed@v3.56/dist/ygo-embed-v3.min.js';
+        script.src = 'https://cdn.jsdelivr.net/gh/CainEastman/ygo-embed@main/dist/ygo-embed-v3.min.js';
         script.defer = true;
         
         // Append to document head
@@ -45,7 +52,7 @@ Copy one of the code snippets below and paste it into the editor:
 </script>
 ```
 
-#### Option B: Standard Version (Legacy)
+#### Option C: Standard Version (Legacy)
 
 ```html
 <!-- YGO Card & Decklist Embed Snippet -->
@@ -70,7 +77,7 @@ Copy one of the code snippets below and paste it into the editor:
 </script>
 ```
 
-#### Option C: ES Module Version (For advanced users)
+#### Option D: ES Module Version (For advanced users)
 
 ```html
 <!-- YGO Card & Decklist Embed Snippet (Modular Version) -->

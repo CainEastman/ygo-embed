@@ -429,12 +429,13 @@
                 <span class="ygo-card-attribute">${card.attribute || ''}</span>
                 ${card.level ? `<span class="ygo-card-level">Level ${card.level}</span>` : ''}
                 ${card.atk !== undefined ? `<span class="ygo-card-atk">ATK/${card.atk}</span>` : ''}
-                ${card.def !== undefined ? `<span class="ygo-card-def">DEF/${card.def}</span>` : ''}
+                ${card.type.toLowerCase().includes('link') ? 
+                  `<span class="ygo-card-def">LINK-${card.linkval}</span>` : 
+                  card.def !== undefined ? `<span class="ygo-card-def">DEF/${card.def}</span>` : ''}
               </div>`;
       } else {
       return `<div class="ygo-card-stats">
                 <span class="ygo-card-type">${card.type}</span>
-                ${card.race ? `<span class="ygo-card-race">${card.race}</span>` : ''}
               </div>`;
       }
   }

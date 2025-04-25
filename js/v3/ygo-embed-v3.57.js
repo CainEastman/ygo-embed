@@ -1,21 +1,28 @@
 (() => {
+  // js/v3/modules/utils.js
+  function normalizeCardName(name) {
+    return name.toLowerCase()
+        .replace(/[^\w\s-]/g, '') // Remove special characters except spaces and hyphens
+        .replace(/\s+/g, ' ')     // Normalize spaces
+        .trim();
+  }
+
   // js/v3/modules/cache.js
-  var CACHE_VERSION = "ygo-cache-v2";
   var CACHE_EXPIRY = 7 * 24 * 60 * 60 * 1e3;
   function initCache() {
     try {
-      const cachedData = localStorage.getItem(CACHE_VERSION);
+      const cachedData = localStorage.getItem(CACHE.VERSION);
       if (cachedData) {
         const parsedCache = JSON.parse(cachedData);
         if (parsedCache.timestamp && Date.now() - parsedCache.timestamp < CACHE_EXPIRY) {
-          console.log(`\u2705 Loaded ${Object.keys(parsedCache.cards).length} cached cards from localStorage`);
+          console.log(`✅ Loaded ${Object.keys(parsedCache.cards).length} cached cards from localStorage`);
           return parsedCache.cards;
         } else {
-          console.log("\u26A0\uFE0F Card cache expired, creating new cache");
+          console.log("⚠️ Card cache expired, creating new cache");
         }
       }
     } catch (err) {
-      console.warn("\u26A0\uFE0F Error loading card cache from localStorage", err);
+      console.warn("⚠️ Error loading card cache from localStorage", err);
     }
     return {};
   }
@@ -25,8 +32,8 @@
         timestamp: Date.now(),
         cards: cardCache
       };
-      localStorage.setItem(CACHE_VERSION, JSON.stringify(cacheData));
-      console.log(`\u2705 Saved ${Object.keys(cardCache).length} cards to cache`);
+      localStorage.setItem(CACHE.VERSION, JSON.stringify(cacheData));
+      console.log(`✅ Saved ${Object.keys(cardCache).length} cards to cache`);
     } catch (err) {
       console.warn("\u26A0\uFE0F Error saving card cache to localStorage", err);
       if (err.name === "QuotaExceededError" || err.name === "NS_ERROR_DOM_QUOTA_REACHED") {
@@ -34,7 +41,7 @@
           const keys = Object.keys(cardCache);
           const keysToRemove = keys.slice(0, Math.floor(keys.length / 2));
           keysToRemove.forEach((key) => delete cardCache[key]);
-          localStorage.setItem(CACHE_VERSION, JSON.stringify({
+          localStorage.setItem(CACHE.VERSION, JSON.stringify({
             timestamp: Date.now(),
             cards: cardCache
           }));
@@ -92,7 +99,7 @@
     TIMEOUT: 15000   // Increased timeout to 15 seconds
   };
   var CACHE = {
-    VERSION: "ygo-cache-v3.3",
+    VERSION: "ygo-cache-v3.52",
     EXPIRY: 7 * 24 * 60 * 60 * 1e3,
     // 7 days in milliseconds
     SAVE_INTERVAL: 6e4
@@ -422,7 +429,9 @@
                 <span class="ygo-card-attribute">${card.attribute || ''}</span>
                 ${card.level ? `<span class="ygo-card-level">Level ${card.level}</span>` : ''}
                 ${card.atk !== undefined ? `<span class="ygo-card-atk">ATK/${card.atk}</span>` : ''}
-                ${card.def !== undefined ? `<span class="ygo-card-def">DEF/${card.def}</span>` : ''}
+                ${card.type.toLowerCase().includes('link') ? 
+                  `<span class="ygo-card-def">LINK-${card.linkval}</span>` : 
+                  card.def !== undefined ? `<span class="ygo-card-def">DEF/${card.def}</span>` : ''}
               </div>`;
       } else {
       return `<div class="ygo-card-stats">
@@ -469,49 +478,16 @@
       }
     });
   }
-  function normalizeCardName(name) {
-    return name.toLowerCase()
-        .replace(/[^\w\s-]/g, '') // Remove special characters except spaces and hyphens
-        .replace(/\s+/g, ' ')     // Normalize spaces
-        .trim();
-  }
-  function findBestMatch(searchName, availableCards) {
-    const normalized = normalizeCardName(searchName);
-    const exactMatch = availableCards.find(
-      (card) => normalizeCardName(card.name) === normalized
-    );
-    if (exactMatch) return exactMatch;
-    const partialMatches = availableCards.filter((card) => {
-      const cardNorm = normalizeCardName(card.name);
-      return cardNorm.includes(normalized) || normalized.includes(cardNorm);
-    });
-    if (partialMatches.length > 0) {
-      return partialMatches.reduce((best, current) => {
-        const bestDiff = Math.abs(normalizeCardName(best.name).length - normalized.length);
-        const currentDiff = Math.abs(normalizeCardName(current.name).length - normalized.length);
-        return currentDiff < bestDiff ? current : best;
-      });
-    }
-    return null;
-  }
   async function renderDeckSection(container, section, cardList, availableCards) {
-    console.log(`Rendering section ${section} with cards:`, cardList);
-    console.log('Available cards:', availableCards);
+    console.log(`Rendering deck section ${section}`);
       
     const sectionElement = document.createElement('div');
     sectionElement.className = 'ygo-deck-section';
     
-    if (section) {
-        const sectionTitle = document.createElement('h3');
-        sectionTitle.textContent = section.charAt(0).toUpperCase() + section.slice(1) + ' Deck';
-        sectionElement.appendChild(sectionTitle);
-    }
-
     const cardEntries = [];
     for (const entry of cardList) {
         try {
             const { quantity, name } = parseQuantity(entry);
-            console.log(`Processing card: ${name} (Quantity: ${quantity})`);
             
             // Try exact match first
             let cardData = availableCards.find(c => 
@@ -530,7 +506,6 @@
             
             if (!cardData || (!cardData.card && !cardData.imgSmall)) {
                 console.warn(`⚠️ Card not found: ${name}`);
-                console.log('Card data:', cardData);
                 // Add placeholder for each copy
                 for (let i = 0; i < quantity; i++) {
                     cardEntries.push({
@@ -550,8 +525,6 @@
             const card = cardData.card || cardData;
             const imgUrl = card.imgSmall || card.card_images?.[0]?.image_url_small;
             const largeImgUrl = card.imgLarge || card.card_images?.[0]?.image_url;
-            
-            console.log(`Found card:`, card);
             
             // Add an entry for each copy of the card
             for (let i = 0; i < quantity; i++) {
@@ -581,6 +554,7 @@
     
     container.innerHTML = ''; // Clear the container
     container.appendChild(sectionElement);
+    console.log(`✅ Rendered ${cardEntries.length} cards in section ${section}`);
     return cardEntries;
   }
 
@@ -623,7 +597,6 @@
 }
 
 .ygo-card-details {
-    font-family: Arial, sans-serif;
     line-height: 1.5;
     color: #ffffff;
     flex: 1;
@@ -753,70 +726,210 @@
     font-style: italic;
 }
 
-/* Deck List Styles */
-.ygo-deck-section {
-    margin: 8px 0 !important; /* Reset to vertical margins only */
+/* Deck List Styles with maximum specificity */
+.dib-post-content .ygo-deck-section,
+.dib-post-content > div > .ygo-deck-section,
+.dib-post-content > p > .ygo-deck-section,
+.dib-post-content div.ygo-deck-section,
+.dib-post-content > * > .ygo-deck-section {
+    margin: 24px 0 32px 0 !important;  /* Increased bottom margin to 32px */
     padding: 0 !important;
     width: 100% !important;
     box-sizing: border-box !important;
+    max-width: none !important;
 }
 
-/* Reset margins for deck sections themselves */
-.ygo-deck-section {
+/* Last deck section should have extra bottom margin */
+.dib-post-content .ygo-deck-section:last-of-type,
+.dib-post-content > div > .ygo-deck-section:last-of-type,
+.dib-post-content div.ygo-deck-section:last-of-type {
+    margin-bottom: 40px !important;
+}
+
+/* First deck section should have less top margin if it follows a heading */
+.dib-post-content h1 + .ygo-deck-section,
+.dib-post-content h2 + .ygo-deck-section,
+.dib-post-content h3 + .ygo-deck-section,
+.dib-post-content h4 + .ygo-deck-section,
+.dib-post-content h5 + .ygo-deck-section,
+.dib-post-content h6 + .ygo-deck-section {
+    margin-top: 16px !important;
+}
+
+/* Target any DIB container that has our deck section */
+.dib-post-content div:has(.ygo-deck-section),
+.dib-post-content p:has(.ygo-deck-section),
+.dib-post-content > div:has(> .ygo-deck-section),
+.dib-post-content > p:has(> .ygo-deck-section) {
     margin: 0 !important;
     padding: 0 !important;
+    max-width: none !important;
     width: 100% !important;
-    box-sizing: border-box !important;
 }
 
-/* Handle spacing between consecutive deck sections */
-.ygo-deck-section + .ygo-deck-section {
-    margin-top: 4px !important;
-}
-
-/* Ensure grid container maintains proper alignment */
-.ygo-cards {
+/* Reset margins and padding ONLY for deck section containers */
+.dib-post-content > div.ygo-deck-section,
+.dib-post-content > p.ygo-deck-section {
     margin: 0 !important;
     padding: 0 !important;
-    width: 100% !important;
+    max-width: none !important;
+}
+
+/* Force spacing between consecutive deck sections */
+.dib-post-content .ygo-deck-section + .ygo-deck-section {
+    margin-top: 2px !important;
+}
+
+/* Target the grid container with maximum specificity */
+.dib-post-content .ygo-deck-section .ygo-cards,
+.dib-post-content div.ygo-deck-section .ygo-cards,
+.dib-post-content > div > .ygo-deck-section .ygo-cards {
     display: grid !important;
     grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
-    gap: 1px !important;
-    box-sizing: border-box !important;
+    gap: 12px 4px !important;  /* Increased vertical gap */
+    margin: 2px 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
 }
 
-/* Section title adjustments */
-.ygo-deck-section > h3 {
-    margin: 0 0 4px 0 !important;
+/* Card entry styles with maximum specificity */
+.dib-post-content .ygo-deck-section .ygo-card-entry,
+.dib-post-content div.ygo-deck-section .ygo-card-entry {
+    margin: 0 0 16px 0 !important;  /* Increased bottom margin */
     padding: 0 !important;
-    border-bottom: 2px solid rgba(255, 255, 255, 0.1) !important;
-    line-height: 1.2 !important;
-    font-size: 1.2em !important;
+    text-align: center !important;
+    width: 100% !important;
+}
+
+/* Image styles with maximum specificity and shadow removal */
+.dib-post-content .ygo-deck-section .ygo-card-entry img,
+.dib-post-content div.ygo-deck-section .ygo-card-entry img,
+.dib-post-content .ygo-deck-section .ygo-card-entry a > img,
+.dib-post-content div.ygo-deck-section .ygo-card-entry a > img,
+.dib-post-content [class*="dib"] .ygo-deck-section img,
+.dib-post-content [class*="dib"] .ygo-card-entry img {
+    width: 100% !important;
+    max-width: 100px !important;
+    height: auto !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    display: block !important;
+    border-radius: 2px !important;
+    box-shadow: none !important;
+    -webkit-box-shadow: none !important;
+    -moz-box-shadow: none !important;
+    filter: none !important;
+    -webkit-filter: none !important;
+    transform: none !important;
+    -webkit-transform: none !important;
+    border: none !important;
+    cursor: zoom-in !important;
+}
+
+/* Ensure links have the same cursor */
+.dib-post-content .ygo-deck-section .ygo-card-entry a,
+.dib-post-content div.ygo-deck-section .ygo-card-entry a,
+.dib-post-content [class*="dib"] .ygo-card-entry a {
+    box-shadow: none !important;
+    -webkit-box-shadow: none !important;
+    -moz-box-shadow: none !important;
+    filter: none !important;
+    -webkit-filter: none !important;
+    transform: none !important;
+    -webkit-transform: none !important;
+    text-decoration: none !important;
+}
+
+/* Separate cursor styles for images and text */
+.dib-post-content .ygo-deck-section .ygo-card-entry a:has(img) {
+    cursor: zoom-in !important;
+}
+
+.dib-post-content .ygo-deck-section .ygo-card-entry a.ygo-card-name {
+    cursor: pointer !important;
+}
+
+/* Card name styles with maximum specificity */
+.dib-post-content .ygo-deck-section .ygo-card-entry .ygo-card-name,
+.dib-post-content div.ygo-deck-section .ygo-card-entry .ygo-card-name {
+    font-size: 0.85em !important;
+    line-height: 1.4 !important;  /* Increased line height */
+    margin: 6px 0 0 0 !important;  /* Increased top margin */
+    padding: 0 4px !important;  /* Added horizontal padding */
+    display: block !important;
+    text-align: center !important;
     color: #ffffff !important;
+    min-height: 2.8em !important;  /* Set minimum height for 2 lines */
 }
 
 /* Mobile adjustments */
+@media (max-width: 768px) {
+    .dib-post-content .ygo-deck-section .ygo-cards,
+    .dib-post-content div.ygo-deck-section .ygo-cards {
+        grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    }
+}
+
 @media (max-width: 480px) {
-    .ygo-cards {
+    .dib-post-content .ygo-deck-section .ygo-cards,
+    .dib-post-content div.ygo-deck-section .ygo-cards {
         grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
     }
+}
+
+/* Additional overrides for DIB containers containing our components */
+.dib-post-content > div[class*="dib"]:has(.ygo-deck-section),
+.dib-post-content > p[class*="dib"]:has(.ygo-deck-section) {
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: none !important;
+    width: 100% !important;
+}
+
+/* Reset spacing ONLY for deck section components */
+.dib-post-content .ygo-deck-section *,
+.dib-post-content .ygo-cards *,
+.dib-post-content .ygo-card-entry * {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    max-width: none !important;
+}
+
+/* Add back normal spacing for regular blog content */
+.dib-post-content p:not(:has(.ygo-deck-section, .ygo-card-embed)) {
+    margin: 1em 0 !important;
+}
+
+.dib-post-content h1, 
+.dib-post-content h2, 
+.dib-post-content h3, 
+.dib-post-content h4, 
+.dib-post-content h5, 
+.dib-post-content h6 {
+    margin: 1.5em 0 0.5em !important;
+}
+
+.dib-post-content ul:not(.ygo-cards),
+.dib-post-content ol {
+    margin: 1em 0 !important;
+    padding-left: 2em !important;
+}
+
+.dib-post-content li:not(.ygo-card-entry) {
+    margin: 0.5em 0 !important;
 }
 `;
 
   // Add styles to document
-  const styleSheet = document.createElement("style");
-  styleSheet.textContent = styles;
-  document.head.appendChild(styleSheet);
-
-  // js/v3/modules/styles.js
-  function loadStyles() {
-    if (!document.getElementById("ygo-embed-styles")) {
-      const style = document.createElement("style");
-      style.id = "ygo-embed-styles";
-      style.textContent = styles;
-      document.head.appendChild(style);
-      console.log("\u2705 YGO embed styles loaded");
-    }
+  if (!document.getElementById("ygo-embed-styles")) {
+    const styleSheet = document.createElement("style");
+    styleSheet.id = "ygo-embed-styles";
+    styleSheet.textContent = styles;
+    document.head.appendChild(styleSheet);
+    console.log("✅ YGO embed styles loaded");
   }
 
   // js/v3/modules/contentParser.js
@@ -870,23 +983,20 @@
       await waitForDropInBlog();
       
       // Initialize cache and request queue
-    const cardCache = initCache();
-    const requestQueue = setupRequestQueue(cardCache);
+      const cardCache = initCache();
+      const requestQueue = setupRequestQueue(cardCache);
       
       // Setup context for all modules
-    const context = {
-      cardCache,
-      requestQueue,
-      fetchCard: (name) => fetchCard(name, cardCache, requestQueue),
-      fetchCards: (names) => fetchCards(names, cardCache, requestQueue)
-    };
-      
-      // Load styles
-      loadStyles();
+      const context = {
+        cardCache,
+        requestQueue,
+        fetchCard: (name) => fetchCard(name, cardCache, requestQueue),
+        fetchCards: (names) => fetchCards(names, cardCache, requestQueue)
+      };
       
       // Setup periodic cache saving
       const saveInterval = CACHE.SAVE_INTERVAL;
-    const saveIntervalId = setInterval(() => saveCardCache(cardCache), saveInterval);
+      const saveIntervalId = setInterval(() => saveCardCache(cardCache), saveInterval);
       
       // Save cache before page unload
       window.addEventListener('beforeunload', () => saveCardCache(cardCache));
@@ -898,19 +1008,19 @@
       }
       
       // Setup hover previews
-    setupHoverPreviews(context);
+      setupHoverPreviews(context);
       
       // Render card embeds
-    renderCardEmbeds(context);
+      renderCardEmbeds(context);
       
       // Render decklists
-    renderDecklists(context);
+      renderDecklists(context);
       
       // Save cache on page unload
       window.addEventListener('unload', () => {
-      clearInterval(saveIntervalId);
-      saveCardCache(cardCache);
-    });
+        clearInterval(saveIntervalId);
+        saveCardCache(cardCache);
+      });
       
       console.log('✅ YGO embed script initialized successfully');
     } catch (error) {
@@ -934,92 +1044,86 @@
     
     if (uniqueNames.length === 0) return [];
     
-    try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), API.TIMEOUT);
-        
-        console.log('Fetching batch:', uniqueNames);
-        
-        // Fetch cards one by one for more accurate results
-        const allCards = [];
-        for (const name of uniqueNames) {
-            try {
-                // Try exact name match first
-                let params = new URLSearchParams({
-                    name: name,  // Use exact name matching first
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), API.TIMEOUT);
+    
+    console.log('Fetching batch:', uniqueNames);
+    
+    // Fetch cards one by one for more accurate results
+    const allCards = [];
+    for (const name of uniqueNames) {
+        try {
+            // Try exact name match first
+            let params = new URLSearchParams({
+                name: name,  // Use exact name matching first
+            });
+            
+            let url = `${API.BASE_URL}/cardinfo.php?${params.toString()}`;
+            console.log(`Fetching card "${name}" with exact match from:`, url);
+            
+            let response = await fetch(url, {
+                method: 'GET',
+                signal: controller.signal
+            });
+            
+            // If exact match fails, try fuzzy search
+            if (!response.ok) {
+                params = new URLSearchParams({
+                    fname: name,  // Fallback to fuzzy name matching
                 });
                 
-                let url = `${API.BASE_URL}/cardinfo.php?${params.toString()}`;
-                console.log(`Fetching card "${name}" with exact match from:`, url);
+                url = `${API.BASE_URL}/cardinfo.php?${params.toString()}`;
+                console.log(`Retrying card "${name}" with fuzzy match from:`, url);
                 
-                let response = await fetch(url, {
+                response = await fetch(url, {
                     method: 'GET',
                     signal: controller.signal
                 });
-                
-                // If exact match fails, try fuzzy search
-                if (!response.ok) {
-                    params = new URLSearchParams({
-                        fname: name,  // Fallback to fuzzy name matching
-                    });
-                    
-                    url = `${API.BASE_URL}/cardinfo.php?${params.toString()}`;
-                    console.log(`Retrying card "${name}" with fuzzy match from:`, url);
-                    
-                    response = await fetch(url, {
-                        method: 'GET',
-                        signal: controller.signal
-                    });
-                }
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.data && data.data.length > 0) {
-                        // Try exact match first (case-insensitive)
-                        let bestMatch = data.data.find(card => 
-                            card.name.toLowerCase() === name.toLowerCase()
-                        );
-                        
-                        // If no exact match, try fuzzy match
-                        if (!bestMatch) {
-                            const nameParts = name.toLowerCase().split(/[,&]/);
-                            bestMatch = data.data.find(card => {
-                                const cardName = card.name.toLowerCase();
-                                // Check if all parts of the search name are in the card name
-                                return nameParts.every(part => 
-                                    cardName.includes(part.trim())
-                                );
-                            });
-                        }
-                        
-                        // If still no match, take the first result
-                        if (!bestMatch) {
-                            bestMatch = data.data[0];
-                        }
-                        
-                        allCards.push(bestMatch);
-                        console.log(`Found card "${name}":`, bestMatch);
-                    } else {
-                        console.warn(`No results found for card "${name}"`);
-                    }
-                } else {
-                    console.warn(`Failed to fetch card "${name}": ${response.status}`);
-                }
-            } catch (err) {
-                console.error(`Error fetching card "${name}":`, err);
             }
             
-            // Add a small delay between requests to avoid rate limiting
-            await new Promise(resolve => setTimeout(resolve, 50));
+            if (response.ok) {
+                const data = await response.json();
+                if (data.data && data.data.length > 0) {
+                    // Try exact match first (case-insensitive)
+                    let bestMatch = data.data.find(card => 
+                        card.name.toLowerCase() === name.toLowerCase()
+                    );
+                    
+                    // If no exact match, try fuzzy match
+                    if (!bestMatch) {
+                        const nameParts = name.toLowerCase().split(/[,&]/);
+                        bestMatch = data.data.find(card => {
+                            const cardName = card.name.toLowerCase();
+                            // Check if all parts of the search name are in the card name
+                            return nameParts.every(part => 
+                                cardName.includes(part.trim())
+                            );
+                        });
+                    }
+                    
+                    // If still no match, take the first result
+                    if (!bestMatch) {
+                        bestMatch = data.data[0];
+                    }
+                    
+                    allCards.push(bestMatch);
+                    console.log(`Found card "${name}":`, bestMatch);
+                } else {
+                    console.warn(`No results found for card "${name}"`);
+                }
+            } else {
+                console.warn(`Failed to fetch card "${name}": ${response.status}`);
+            }
+        } catch (err) {
+            console.error(`Error fetching card "${name}":`, err);
         }
         
-        clearTimeout(timeoutId);
-        return allCards;
-        
-    } catch (err) {
-        console.error(`❌ Batch fetch error for cards: ${uniqueNames.join(", ")}`, err);
-        throw err;
+        // Add a small delay between requests to avoid rate limiting
+        await new Promise(resolve => setTimeout(resolve, 50));
     }
+    
+    clearTimeout(timeoutId);
+    return allCards;
   }
 })();
 //# sourceMappingURL=ygo-embed-v3.4.js.map
