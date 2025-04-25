@@ -1,0 +1,43 @@
+deck::main
+- Blue-Eyes White Dragon x3
+- Blue-Eyes Alternative White Dragon x2
+- Blue-Eyes Jet Dragon x1
+- Blue-Eyes Abyss Dragon x1
+- Maiden Of White x3
+- Sage With Eyes Of Blue x3
+- Neo Kaiser Sea Horse x2
+- Effect Veiler x3
+- Ash Blossom & Joyous Spring x3
+- Wishes For Eyes Of Blue x3
+- Roar Of The Blue-Eyed Dragons x2
+- True Light x2
+- Majesty Of The White Dragons x1
+- Ultimate Fusion x1
+- Mausoleum Of White x1
+- The Melody Of Awakening Dragon x3
+- Trade-In x3
+- Infinite Impermanence x3
+
+deck::extra
+- Hieratic Seal Of The Heavenly Spheres x1
+- Spirit With Eyes Of Blue x3
+- Blue-Eyes Spirit Dragon x3
+- Blue-Eyes Ultimate Spirit Dragon x3
+- Azure-Eyes Silver Dragon x1
+- Blue-Eyes Tyrant Dragon x1
+- Blue-Eyes Twin Burst Dragon x1
+- Neo Blue-Eyes Ultimate Dragon x1
+- Indigo-Eyes Silver Dragon x1
+
+deck::upgrade
+- Blue-Eyes Chaos Max Dragon
+- Blue-Eyes Chaos Dragon
+- Dragon Spirit Of White
+- The White Stone Of Ancients
+- Master With Eyes Of Blue
+- Dictator Of D.
+- Nibiru, the Primal Being
+- Called By The Grave
+- Chaos Form
+- Burst Stream Of Destruction
+- Destined Rivals 
