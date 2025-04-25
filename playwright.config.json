@@ -1,0 +1,23 @@
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "@playwright/mcp@latest",
+        "--vision",
+        "--headless"
+      ],
+      "launchOptions": {
+        "viewport": {
+          "width": 1280,
+          "height": 720
+        },
+        "args": [
+          "--disable-gpu",
+          "--disable-dev-shm-usage",
+          "--no-sandbox"
+        ]
+      }
+    }
+  }
+} 

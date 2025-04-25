@@ -3,9 +3,14 @@
   "version": "3.3.0",
   "type": "module",
   "scripts": {
-    "build": "node build-esbuild.cjs"
+    "build": "node build-esbuild.cjs",
+    "test": "playwright test",
+    "playwright:install": "playwright install chromium"
   },
   "devDependencies": {
-    "esbuild": "^0.25.3"
+    "esbuild": "^0.25.3",
+    "@playwright/mcp": "latest",
+    "@playwright/test": "^1.42.1",
+    "playwright": "^1.42.1"
   }
 }
